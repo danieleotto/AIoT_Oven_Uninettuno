@@ -28,7 +28,7 @@ class MAX6675(object):
             wp.digitalWrite(self.PIN_SCK, 1)
             time.sleep(0.001)
             value <<= 1
-            if wp.digitalRead(self.PIN_DO, 0):
+            if wp.digitalRead(self.PIN_DO):
                 value |= 1
             wp.digitalWrite(self.PIN_SCK, 0)
             time.sleep(0.001)

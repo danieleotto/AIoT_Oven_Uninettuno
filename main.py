@@ -11,7 +11,7 @@ try:
     print("Press CTRL+C to exit")
     start_time = time.time()
     while True:
-        temp = MAX6675.readTempC()
+        temp = tc.readTempC()
         elapsed_time = time.time() - start_time
         if temp is None:
             sys.stdout.write(f"\rTermocoppia non collegata.")
