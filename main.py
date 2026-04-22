@@ -11,8 +11,8 @@ tc = MAX6675(P_SCK, P_CS, P_DO)
 x_time = []
 y_temp = []
 
-lg = fileLogger(input("Inserire nome file per il log completo di estensione"))
-ws = int(input("Inserire numero di campioni per ogni lettura:"))
+lg = fileLogger(input("Inserire nome file per il log completo di estensione: "))
+ws = int(input("Inserire numero di campioni per ogni lettura: "))
 ma = MovingAverage(ws)
 counter = 0
 

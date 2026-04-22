@@ -5,7 +5,7 @@ class fileLogger:
         self.log_file = log_file
         with open(log_file, "a") as f:
             if f.tell() == 0:
-                f.write("timestamp, temp, time")
+                f.write("timestamp, temp, time\n")
 
     def log(self, temp, time):
         with open(self.log_file, "a") as f:
