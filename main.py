@@ -42,7 +42,7 @@ try:
             x_time.append(elapsed_time)
             y_temp.append(avg)
             sys.stdout.write(f"\rTemperatura media ultimi {ma.size} campioni: {avg:.2f} °C | Tempo: {elapsed_time:.2f} s | SSR On: {ssr_res.isOn} |Numero campione: {n_camp}")
-            lg.log(avg,elapsed_time,ssr_res.isOn,n_camp)
+            lg.log(f"{avg:.2f},{elapsed_time:.2f},{ssr_res.isOn},{n_camp}\n")
             counter = 0
             n_camp += 1
 
