@@ -1,5 +1,5 @@
 import sys, time
-from max6675lib import MAX6675
+from max6675lib import MAX6675, MovingAverage
 
 P_SCK = 8
 P_CS = 7
@@ -10,24 +10,33 @@ tc = MAX6675(P_SCK, P_CS, P_DO)
 x_time = []
 y_temp = []
 
+ws = int(input("Inserire numero di campioni per ogni lettura:"))
+ma = MovingAverage(ws)
+counter = 0
+
 try:
     print("Press CTRL+C to exit")
     start_time = time.time()
     while True:
         temp = tc.readTempC()
-        elapsed_time = time.time() - start_time
-        if temp is None:
-            sys.stdout.write(f"\rTermocoppia non collegata.")
+        if temp is not None:
+            ma.add(temp)
         else:
+            sys.stdout.write(f"\rTermocoppia non collegata.")
+        time.sleep(0.2)
+        counter += 1
+
+        if counter >= ws:
+            elapsed_time = time.time() - start_time
+            avg = ma.average()
             x_time.append(elapsed_time)
-            y_temp.append(temp)
-            sys.stdout.write(f"\rTemperatura: {temp:.2f} °C | Tempo: {elapsed_time:.2f} s")
-        sys.stdout.flush()
-        time.sleep(0.5)
+            y_temp.append(avg)
+            sys.stdout.write(f"\rTemperatura media {ws} campioni: {avg:.2f} °C | Tempo: {elapsed_time:.2f} s")
+            counter = 0
 
 except KeyboardInterrupt:
     print("\nExit")
-    for values in y_temp:
-        print(f"Temperatura: {y_temp[values]:.2f} °C | Tempo: {x_time[values]:.2f} s")
+    for i in range(0, len(x_time)):
+        print(f"Temperatura media: {y_temp[i]:.2f} °C | Tempo: {x_time[i]:.2f} s")
 
 

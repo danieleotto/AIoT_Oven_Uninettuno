@@ -1,12 +1,15 @@
 import wiringpi as wp
 from wiringpi import GPIO
 import time
+from collections import deque
 
 class MAX6675(object):
-    def __init__(self, PIN_SCK, PIN_CS, PIN_DO):
+    def __init__(self, PIN_SCK, PIN_CS, PIN_DO, WINDOW_SIZE):
         self.PIN_SCK = PIN_SCK
         self.PIN_CS = PIN_CS
         self.PIN_DO = PIN_DO
+        self.wsize = WINDOW_SIZE
+        self.buffer = deque(maxlen=self.wsize)
 
         wp.wiringPiSetup()
 
@@ -41,7 +44,20 @@ class MAX6675(object):
         temp_c = (value >> 3) * 0.25
         return temp_c
 
-
     def readTempF(self):
         temp_f = (self.readTempC() * (9/5)) + 32
         return temp_f
+
+
+class MovingAverage:
+    def __init__(self, WINDOW_SIZE):
+        self.size = WINDOW_SIZE
+        self.buffer = deque(maxlen=self.size)
+
+    def add(self, value):
+        self.buffer.append(value)
+
+    def average(self):
+        if not self.buffer:
+            return None
+        return sum(self.buffer) / len(self.buffer)
