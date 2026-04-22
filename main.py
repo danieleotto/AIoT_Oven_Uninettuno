@@ -1,5 +1,6 @@
 import sys, time
 from max6675lib import MAX6675, MovingAverage
+from logger import fileLogger
 
 P_SCK = 8
 P_CS = 7
@@ -10,6 +11,7 @@ tc = MAX6675(P_SCK, P_CS, P_DO)
 x_time = []
 y_temp = []
 
+lg = fileLogger(input("Inserire nome file per il log completo di estensione"))
 ws = int(input("Inserire numero di campioni per ogni lettura:"))
 ma = MovingAverage(ws)
 counter = 0
@@ -32,6 +34,7 @@ try:
             x_time.append(elapsed_time)
             y_temp.append(avg)
             sys.stdout.write(f"\rTemperatura media {ws} campioni: {avg:.2f} °C | Tempo: {elapsed_time:.2f} s")
+            lg.log(avg,elapsed_time)
             counter = 0
 
 except KeyboardInterrupt:

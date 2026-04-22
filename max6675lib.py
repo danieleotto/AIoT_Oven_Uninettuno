@@ -4,12 +4,10 @@ import time
 from collections import deque
 
 class MAX6675(object):
-    def __init__(self, PIN_SCK, PIN_CS, PIN_DO, WINDOW_SIZE):
+    def __init__(self, PIN_SCK, PIN_CS, PIN_DO):
         self.PIN_SCK = PIN_SCK
         self.PIN_CS = PIN_CS
         self.PIN_DO = PIN_DO
-        self.wsize = WINDOW_SIZE
-        self.buffer = deque(maxlen=self.wsize)
 
         wp.wiringPiSetup()
 
