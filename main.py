@@ -1,19 +1,22 @@
 import sys, time
 from max6675lib import MAX6675, MovingAverage
 from logger import fileLogger
+from ssrelay import SSR
 
-P_SCK = 8
-P_CS = 7
-P_DO = 5
-
-tc = MAX6675(P_SCK, P_CS, P_DO)
+PIN_SCK = 8
+PIN_CS = 7
+PIN_DO = 5
+PIN_SSR_RES = 2
 
 x_time = []
 y_temp = []
 
+tc = MAX6675(PIN_SCK, PIN_CS, PIN_DO)
+ma = MovingAverage(int(input("Inserire numero di campioni per ogni lettura: ")))
 lg = fileLogger(input("Inserire nome file per il log completo di estensione: "))
-ws = int(input("Inserire numero di campioni per ogni lettura: "))
-ma = MovingAverage(ws)
+ssr_res = SSR(PIN_SSR_RES)
+
+target = float(input("Inserire temperatura target: "))
 counter = 0
 n_camp = 1
 
@@ -29,13 +32,17 @@ try:
         time.sleep(0.2)
         counter += 1
 
-        if counter >= ws:
+        if counter >= ma.size:
             elapsed_time = time.time() - start_time
             avg = ma.average()
+            if avg < target:
+                ssr_res.HIGH()
+            else:
+                ssr_res.LOW()
             x_time.append(elapsed_time)
             y_temp.append(avg)
-            sys.stdout.write(f"\rTemperatura media ultimi {ws} campioni: {avg:.2f} °C | Tempo: {elapsed_time:.2f} s | Numero campione: {n_camp}")
-            lg.log(avg,elapsed_time,n_camp)
+            sys.stdout.write(f"\rTemperatura media ultimi {ma.size} campioni: {avg:.2f} °C | Tempo: {elapsed_time:.2f} s | SSR On: {ssr_res.isOn} |Numero campione: {n_camp}")
+            lg.log(avg,elapsed_time,ssr_res.isOn,n_camp)
             counter = 0
             n_camp += 1
 

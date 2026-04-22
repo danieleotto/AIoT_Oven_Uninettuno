@@ -7,8 +7,7 @@ class fileLogger:
             if f.tell() == 0:
                 f.write("timestamp, temp, time, n_camp\n")
 
-    def log(self, temp, time, n_camp):
+    def log(self, temp, time, ssr_state, n_camp):
         with open(self.log_file, "a") as f:
             timestamp = datetime.now().isoformat()
-            f.write(f"{timestamp},{temp:.2f},{time:.2f},{n_camp}\n")
-
+            f.write(f"{timestamp},{temp:.2f},{time:.2f},{ssr_state},{n_camp}\n")
