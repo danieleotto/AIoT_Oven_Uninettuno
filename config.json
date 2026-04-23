@@ -1,0 +1,10 @@
+{
+  "avg_sample_size" : 10,
+  "TC_PIN_SCK": 8,
+  "TC_PIN_CS": 7,
+  "TC_PIN_DO": 5,
+  "RES_SSR_PIN": 2,
+  "FAN_SSR_PIN": 3,
+  "db_path": "/database/ovenDB.db",
+  "sample_interval": 0.2
+}

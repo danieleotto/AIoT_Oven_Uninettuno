@@ -4,10 +4,10 @@ import time
 from collections import deque
 
 class MAX6675(object):
-    def __init__(self, PIN_SCK, PIN_CS, PIN_DO):
-        self.PIN_SCK = PIN_SCK
-        self.PIN_CS = PIN_CS
-        self.PIN_DO = PIN_DO
+    def __init__(self, pin_sck, pin_cs, pin_do):
+        self.PIN_SCK = pin_sck
+        self.PIN_CS = pin_cs
+        self.PIN_DO = pin_do
 
         wp.wiringPiSetup()
 
@@ -27,12 +27,12 @@ class MAX6675(object):
 
         for i in range(16):
             wp.digitalWrite(self.PIN_SCK, 1)
-            time.sleep(0.001)
+            time.sleep(0.00001)
             value <<= 1
             if wp.digitalRead(self.PIN_DO):
                 value |= 1
             wp.digitalWrite(self.PIN_SCK, 0)
-            time.sleep(0.001)
+            time.sleep(0.00001)
 
         wp.digitalWrite(self.PIN_CS, 1)
 
@@ -48,8 +48,8 @@ class MAX6675(object):
 
 
 class MovingAverage:
-    def __init__(self, WINDOW_SIZE):
-        self.size = WINDOW_SIZE
+    def __init__(self, sample_size):
+        self.size = sample_size
         self.buffer = deque(maxlen=self.size)
 
     def add(self, value):
