@@ -18,3 +18,9 @@ class SSR(object):
     def HIGH(self):
         wp.digitalWrite(self.PIN, GPIO.HIGH)
         self.isOn = True
+
+    def getState(self):
+        if self.isOn:
+            return 1
+        else:
+            return 0
