@@ -12,9 +12,9 @@ class SSR(object):
 
 
     def LOW(self):
-        wp.pinMode(self.PIN, GPIO.LOW)
+        wp.digitalWrite(self.PIN, GPIO.LOW)
         self.isOn = False
 
     def HIGH(self):
-        wp.pinMode(self.PIN, GPIO.HIGH)
+        wp.digitalWrite(self.PIN, GPIO.HIGH)
         self.isOn = True

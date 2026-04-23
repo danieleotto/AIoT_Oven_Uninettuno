@@ -49,6 +49,7 @@ try:
 
 except KeyboardInterrupt:
     print("\nExit")
+    ssr_res.LOW()
     for i in range(0, len(x_time)):
         print(f"Temperatura media: {y_temp[i]:.2f} °C | Tempo: {x_time[i]:.2f} s | Numero campione: {i+1}")
 
