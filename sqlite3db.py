@@ -1,8 +1,13 @@
-import sqlite3
+import sqlite3, os
 
 class SQLite3DB:
-    def __init__(self, path):
-        self.conn = sqlite3.connect(path)
+    def __init__(self, filename):
+        self.DB_DIR = "database"
+        self.DB_FILE = os.path.join(self.DB_DIR, filename)
+
+        os.makedirs(self.DB_DIR, exist_ok=True)
+
+        self.conn = sqlite3.connect(self.DB_FILE)
         self.cursor = self.conn.cursor()
         self.cursor.execute("""
         CREATE TABLE IF NOT EXISTS stato (

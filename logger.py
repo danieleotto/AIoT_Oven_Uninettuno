@@ -1,13 +1,18 @@
 from datetime import datetime
+import os
 
 class FileLogger:
     def __init__(self):
-        self.log_file = "/logs/" + datetime.now().strftime("%Y%m%d_%H%M%S") + "_ProcLog.csv"
-        with open(self.log_file, "a", encoding="utf-8") as f:
+        self.LOG_DIR = "logs"
+        self.LOG_FILE = datetime.now().strftime("%Y%m%d-%H%M%S") + "_ProcLog.csv"
+        self.LOG_FILENAME = os.path.join(self.LOG_DIR, self.LOG_FILE)
+        os.makedirs(self.LOG_DIR, exist_ok=True)
+
+        with open(self.LOG_FILENAME, "a", encoding="utf-8") as f:
             if f.tell() == 0:
                 f.write("timestamp, temp, time, ssr_res_state, ssr_fan_state, n_camp\n")
 
     def log(self, message):
-        with open(self.log_file, "a", encoding="utf-8") as f:
+        with open(self.LOG_FILENAME, "a", encoding="utf-8") as f:
             timestamp = datetime.now().isoformat()
             f.write(f"{timestamp},{message}")

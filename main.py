@@ -18,7 +18,7 @@ interval = configData["sample_interval"]
 tc = MAX6675(TC_PIN_SCK, TC_PIN_CS, TC_PIN_DO)
 ma = MovingAverage(configData["avg_sample_size"])
 lg = FileLogger()
-sq = SQLite3DB(configData["db_path"])
+sq = SQLite3DB(configData["db_filename"])
 ssr_res = SSR(RES_SSR_PIN)
 ssr_fan = SSR(FAN_SSR_PIN)
 

@@ -5,6 +5,6 @@
   "TC_PIN_DO": 5,
   "RES_SSR_PIN": 2,
   "FAN_SSR_PIN": 3,
-  "db_path": "/database/ovenDB.db",
+  "db_filename": "ovenDB.db",
   "sample_interval": 0.2
 }
