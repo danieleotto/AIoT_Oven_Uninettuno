@@ -67,11 +67,10 @@ try:
 
         #sysTemp = dht22.getTemp()
         sysTemp = 22
-        sys.stdout.write(f"\rTemperatura media ultimi {ma.size} campioni: {avg:.2f} °C | Tempo: {elapsed_time:.2f} s | SSR1: {ssr_res.getState()} | SSR2: {ssr_fan.getState()} |Numero campione: {n_camp}")
-        #lg.log(f"{avg:.2f},{elapsed_time:.2f},{ssr_res.getState()},{ssr_fan.getState()}{n_camp}{sysTemp:.2f}\n")
         sq.addSample(idproc, avg, target, elapsed_time, ssr_res.getState(), ssr_fan.getState(), sysTemp)
         idsample = sq.getLastId("campioni")
         lg.log(f"{idproc},{process},{idsample},{target:.2f},{avg:.2f},{elapsed_time:.2f},{ssr_res.getState()},{ssr_fan.getState()}{sysTemp:.2f}\n")
+        sys.stdout.write(f"\rAvg temp lasr  {ma.size} samples: {avg:.2f} °C | Time: {elapsed_time:.2f} s | SSR_R: {ssr_res.getState()} | SSR_F: {ssr_fan.getState()} Sample#: {idproc}")
 
 
 except KeyboardInterrupt:
