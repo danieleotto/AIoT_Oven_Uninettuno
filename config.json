@@ -5,6 +5,9 @@
   "TC_PIN_DO": 5,
   "RES_SSR_PIN": 2,
   "FAN_SSR_PIN": 3,
+  "DHT22_PIN": 4,
+  "PZEM_port": "/dev/ttyUSB0",
+  "PZEM_timeout": 10,
   "db_filename": "ovenDB.db",
   "sample_interval": 0.2
 }

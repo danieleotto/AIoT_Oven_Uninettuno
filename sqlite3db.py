@@ -10,23 +10,48 @@ class SQLite3DB:
         self.conn = sqlite3.connect(self.DB_FILE)
         self.cursor = self.conn.cursor()
         self.cursor.execute("""
-        CREATE TABLE IF NOT EXISTS stato (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+        CREATE TABLE IF NOT EXISTS listaprocessi (
+            idProc INTEGER PRIMARY KEY AUTOINCREMENT,
             timestamp TEXT,
+            processo TEXT
+        )""")
+        self.cursor.execute("""
+        CREATE TABLE IF NOT EXISTS campioni (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            idProc INTEGER,
+            tempForno REAL,
+            tempTarget REAL,
             elapsedTime REAL,
-            temperatura REAL,
             ssrRstate BOOLEAN,
-            ssrFstate BOOLEAN
+            ssrFstate BOOLEAN,
+            tempSystem REAL
         )""")
         self.conn.commit()
 
-    def add(self, timestamp, elapsedtime, temperatura, ssr1state, ssr2state):
+    def addSample(self, idproc, tempoven, temptarget, elapsedtime, ssr1state, ssr2state, tempsystem):
         self.cursor.execute(
-            "INSERT INTO stato (timestamp, elapsedTime, temperatura, ssrRstate, ssrFstate)VALUES (?, ?, ?, ?, ?)",
-            (timestamp, elapsedtime, temperatura, ssr1state, ssr2state)
+            "INSERT INTO campioni (idproc, tempForno, tempTarget, elapsedTime, ssrRstate, ssrFstate, tempSystem) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (idproc, tempoven, temptarget, elapsedtime, ssr1state, ssr2state, tempsystem)
         )
         self.conn.commit()
 
-    def readAll(self):
-        self.cursor.execute("SELECT * FROM stato ORDER BY id ASC")
+    def addProcess(self, timestamp, processo):
+        self.cursor.execute(
+            "INSERT INTO listaprocessi (timestamp, processo) VALUES (?, ?)",
+            (timestamp, processo)
+        )
+        self.conn.commit()
+
+    def readSamples(self):
+        self.cursor.execute("SELECT * FROM campioni ORDER BY id ASC")
         return self.cursor.fetchall()
+
+    def readProcesses(self):
+        self.cursor.execute("SELECT * FROM listaprocessi ORDER BY idProc ASC")
+        return self.cursor.fetchall()
+
+    def getLastId(self, tablename):
+        query = f"SELECT * FROM {tablename} ORDER BY 1 DESC LIMIT 1"
+        self.cursor.execute(query)
+        r = self.cursor.fetchone()
+        return r[0] if r else None

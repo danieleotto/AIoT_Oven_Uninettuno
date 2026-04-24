@@ -10,7 +10,7 @@ class FileLogger:
 
         with open(self.LOG_FILENAME, "a", encoding="utf-8") as f:
             if f.tell() == 0:
-                f.write("timestamp, temp, time, ssr_res_state, ssr_fan_state, n_camp\n")
+                f.write("timestamp, idproc, processo, idsample, target, temp, etime, ssr_res_state, ssr_fan_state, systemp\n")
 
     def log(self, message):
         with open(self.LOG_FILENAME, "a", encoding="utf-8") as f:
