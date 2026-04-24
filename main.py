@@ -70,7 +70,7 @@ try:
         sq.addSample(idproc, avg, target, elapsed_time, ssr_res.getState(), ssr_fan.getState(), sysTemp)
         idsample = sq.getLastId("campioni")
         lg.log(f"{idproc},{process},{idsample},{target:.2f},{avg:.2f},{elapsed_time:.2f},{ssr_res.getState()},{ssr_fan.getState()}{sysTemp:.2f}\n")
-        sys.stdout.write(f"\rAvg temp lasr  {ma.size} samples: {avg:.2f} °C | Time: {elapsed_time:.2f} s | SSR_R: {ssr_res.getState()} | SSR_F: {ssr_fan.getState()} Sample#: {idproc}")
+        sys.stdout.write(f"\rAvg temp lasr  {ma.size} samples: {avg:.2f} °C | Time: {elapsed_time:.2f} s | SSR_R: {ssr_res.getState()} | SSR_F: {ssr_fan.getState()} Sample#: {idsample}")
 
 
 except KeyboardInterrupt:
