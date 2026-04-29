@@ -4,7 +4,7 @@ from processi import Essicatura
 import time, os
 
 def clear():
-    os.system("clear" if os.name == "posix" or "cls")
+    os.system("clear" if os.name == "posix" else "cls")
 
 def ricottura():
     print(f"Processo Ricottura: PLACEHOLDER TODO\n")
