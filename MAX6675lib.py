@@ -46,7 +46,7 @@ class MAX6675(object):
     def readTempC_average(self):
         temp = self.readTempC()
         if temp is not None:
-            self.addAvg()
+            self.addAvg(temp)
         else:
             print(f"\rTermocoppia non collegata.")
         avg = self.getAverage()
