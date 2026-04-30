@@ -19,19 +19,20 @@ class SQLite3DB:
         CREATE TABLE IF NOT EXISTS campioni (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             idProc INTEGER,
-            tempForno REAL,
             tempTarget REAL,
+            tempForno REAL,
             elapsedTime REAL,
+            tempRate REAL,
             ssrRstate BOOLEAN,
             ssrFstate BOOLEAN,
             tempSystem REAL
         )""")
         self.conn.commit()
 
-    def addSample(self, idproc, tempoven, temptarget, elapsedtime, ssr1state, ssr2state, tempsystem):
+    def addSample(self, idproc, temptarget, tempoven, elapsedtime, temprate, ssr1state, ssr2state, tempsystem):
         self.cursor.execute(
-            "INSERT INTO campioni (idproc, tempForno, tempTarget, elapsedTime, ssrRstate, ssrFstate, tempSystem) VALUES (?, ?, ?, ?, ?, ?, ?)",
-            (idproc, tempoven, temptarget, elapsedtime, ssr1state, ssr2state, tempsystem)
+            "INSERT INTO campioni (idproc, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, tempSystem) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (idproc, temptarget, tempoven, elapsedtime, temprate, ssr1state, ssr2state, tempsystem)
         )
         self.conn.commit()
 

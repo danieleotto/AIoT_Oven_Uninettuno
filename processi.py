@@ -46,12 +46,23 @@ class Essicatura:
         t = self.params["temperatura"]
         ti = self.params["heat_time"]
         elapsedTime = 0
+        lastTime = 0
+        deltaTime = 0
+        lastTemp = 0
+        deltaTemp = 0
+        tempRate = 0
         self.ctx.sq.addProcess(timestamp, process)
         try:
             print("Press CTRL+C to exit")
             start_time = time.time()
             while elapsedTime < ti:
                 avgTemp = self.ctx.tc.readTempC_average()
+                
+                if lastTemp != 0:
+                    deltaTemp = avgTemp-lastTemp
+                    deltaTime = elapsedTime-lastTime
+                    tempRate = deltaTemp/deltaTime
+                
                 if avgTemp < t:
                     self.ctx.ssr_res.HIGH()
                 else:
@@ -60,12 +71,15 @@ class Essicatura:
                 #sysTemp = dht22.getTemperature()
                 sysTemp = 22.0
                 idproc = self.ctx.sq.getLastId("listaprocessi")
-                self.ctx.sq.addSample(idproc, avgTemp, t, elapsedTime, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), sysTemp)
+                self.ctx.sq.addSample(idproc, t, avgTemp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), sysTemp)
                 
                 idsample = self.ctx.sq.getLastId("campioni")
-                self.ctx.lg.log(f"{idproc},{process},{idsample},{t:.2f},{avgTemp:.2f},{elapsedTime:.2f},{self.ctx.ssr_res.getState()},{self.ctx.ssr_fan.getState()}{sysTemp:.2f}\n")
+                self.ctx.lg.log(f"{idproc},{process},{idsample},{t:.2f},{avgTemp:.2f},{elapsedTime:.2f},{tempRate:.2f},{self.ctx.ssr_res.getState()},{self.ctx.ssr_fan.getState()},{sysTemp:.2f}\n")
                 
                 time.sleep(self.ctx.tc.interval)
+                
+                lastTemp = avgTemp
+                lastTime = elapsedTime
                 elapsedTime = time.time() - start_time
             return "MAIN_MENU"
                 
