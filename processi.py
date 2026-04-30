@@ -82,6 +82,8 @@ class Essicatura:
                 lastTemp = avgTemp
                 lastTime = elapsedTime
                 elapsedTime = time.time() - start_time
+            self.ctx.ssr_res.LOW()
+            self.ctx.ssr_fan.LOW()
             return "MAIN_MENU"
                 
 
