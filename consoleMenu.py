@@ -25,7 +25,7 @@ class TextMenu:
     def __init__(self, title="Menu", color_title=ANSI.CYAN, color_option=ANSI.WHITE):
         self.title = title
         self.options = {}
-        self.exit_key = "0"
+        self.exit_key = "Q"
         self.parent = None
         
         self.color_title = color_title
@@ -78,7 +78,7 @@ class TextMenu:
     def run(self):
         while True:
             self.show()
-            choice = input("Seleziona un'opzione: ").strip()
+            choice = input("Seleziona un'opzione: ").strip().upper()
             
             if choice == self.exit_key:
                 if self.parent is None:
@@ -108,3 +108,10 @@ class TextMenu:
             else:
                 print(f"{ANSI.RED}Scelta non valida.{ANSI.RESET}")
                 input("Premi invio per continuare...")
+    
+    def enableExec(self):
+        for key,opt in self.options.items():
+            if opt["exec"] == True:
+                opt["disabled"] = False
+                
+            
