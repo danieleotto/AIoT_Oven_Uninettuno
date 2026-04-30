@@ -46,11 +46,11 @@ class Essicatura:
         t = self.params["temperatura"]
         ti = self.params["heat_time"]
         elapsedTime = 0
-        #TODO add to database
+        self.ctx.sq.addProcess(timestamp, process)
         try:
             print("Press CTRL+C to exit")
             start_time = time.time()
-            while elapsed_time < ti:
+            while elapsedTime < ti:
                 avgTemp = self.ctx.tc.readTempC_average()
                 if avgTemp < t:
                     self.ctx.ssr_res.HIGH()
@@ -60,13 +60,13 @@ class Essicatura:
                 #sysTemp = dht22.getTemperature()
                 sysTemp = 22.0
                 idproc = self.ctx.sq.getLastId("listaprocessi")
-                self.ctx.sq.addSample(idproc, avgTemp, t, elapsed_time, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), sysTemp)
+                self.ctx.sq.addSample(idproc, avgTemp, t, elapsedTime, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), sysTemp)
                 
                 idsample = self.ctx.sq.getLastId("campioni")
-                self.ctx.lg.log(f"{idproc},{process},{idsample},{t:.2f},{avgTemp:.2f},{elapsed_time:.2f},{self.ctx.ssr_res.getState()},{self.ctx.ssr_fan.getState()}{sysTemp:.2f}\n")
+                self.ctx.lg.log(f"{idproc},{process},{idsample},{t:.2f},{avgTemp:.2f},{elapsedTime:.2f},{self.ctx.ssr_res.getState()},{self.ctx.ssr_fan.getState()}{sysTemp:.2f}\n")
                 
                 time.sleep(self.readInterval)
-                elapsed_time = time.time() - start_time
+                elapsedTime = time.time() - start_time
             return "MAIN_MENU"
                 
 

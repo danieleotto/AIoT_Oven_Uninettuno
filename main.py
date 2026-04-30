@@ -1,6 +1,5 @@
-import sys, time, json
-from datetime import datetime
-from MAX6675lib import MAX6675, MovingAverage
+import json
+from MAX6675lib import MAX6675
 from logger import FileLogger
 from sqlite3db import SQLite3DB
 from ssrelay import SSR
