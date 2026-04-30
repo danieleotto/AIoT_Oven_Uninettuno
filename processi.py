@@ -14,12 +14,14 @@ def clearValues(params):
 class Essicatura:
     def __init__(self,ctx):
         self.params = {
-            "temperatura": None,
+            "target_temp": None,
             "heat_time": None
         }
         self.ctx = ctx
         self.textMenu = TextMenu("Essicatura", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
-        self.textMenu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['temperatura'] or '-'} [°C]", partial(self.setValue, "temperatura", "Target temperatura [°C]: "))
+        #self.presetMenu = TextMenu("Preset Essicatura", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        #self.textMenu.add_option("0", "Scegli preset di Essicatura",self.presetMenu)
+        self.textMenu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['target_temp'] or '-'} [°C]", partial(self.setValue, "target_temp", "Target temperatura [°C]: "))
         self.textMenu.add_option("2", lambda: f"Imposta Durata      : {self.params['heat_time'] or '-'} [sec]", partial(self.setValue,"heat_time","Durata essicatura [sec]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
     
@@ -43,7 +45,7 @@ class Essicatura:
     def run(self):
         process = "Essicatura"
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        t = self.params["temperatura"]
+        t = self.params["target_temp"]
         ti = self.params["heat_time"]
         elapsedTime = 0
         lastTime = 0
@@ -56,6 +58,8 @@ class Essicatura:
             print("Press CTRL+C to exit")
             start_time = time.time()
             while elapsedTime < ti:
+                #TODO logica reale
+                
                 avgTemp = self.ctx.tc.readTempC_average()
                 
                 if lastTemp != 0:
@@ -84,34 +88,31 @@ class Essicatura:
                 elapsedTime = time.time() - start_time
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
+            clearValues(self.params)
             return "MAIN_MENU"
                 
 
         except KeyboardInterrupt:
-            print("\nProgram terminated.")
+            print("\nProcesso terminato.")
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
             return "MAIN_MENU"
-            # rows = sq.readProcesses()
-            # rows2 = sq.readSamples()
-            # for row in rows:
-            #     print(row)
-            # for row in rows2:
-            #     print(row)
         
 
 
 class Ricottura:
-    def __init__(self):
+    def __init__(self, ctx):
         self.params = {
-            "temperatura": None,
-            "heat_time": None,
-            "cooling_time": None
+            "target_temp": None,
+            "reheat_duration": None,
+            "cooling_rate": None,
+            "cooling_time_calc": None
         }
+        self.ctx = ctx
         self.textMenu = TextMenu("Ricottura", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
-        self.textMenu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['temperatura'] or '-'} [°C]", partial(self.setValue, "temperatura", "Target temperatura [°C]: "))
-        self.textMenu.add_option("2", lambda: f"Imposta Heat Time   : {self.params['heat_time'] or '-'} [sec]", partial(self.setValue, "heat_time", "Durata ricottura [sec]: "))
-        self.textMenu.add_option("3", lambda: f"Imposta Cooling Time: {self.params['cooling_time'] or '-'} [sec]", partial(self.setValue, "cooling_time","Tempo raffreddamento [°C]: "))
+        self.textMenu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['target_temp'] or '-'} [°C]", partial(self.setValue, "target_temp", "Target temperatura [°C]: "))
+        self.textMenu.add_option("2", lambda: f"Imposta Heat Time   : {self.params['reheat_duration'] or '-'} [sec]", partial(self.setValue, "reheat_duration", "Durata ricottura [sec]: "))
+        self.textMenu.add_option("3", lambda: f"Imposta Cooling Rate: {self.params['cooling_rate'] or '-'} [°C/sec]\n    Cooling time   : {self.params["cooling_time_calc"] or '-'}", partial(self.setValue, "cooling_rate","Rate raffreddamento [°C/sec]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
     
     def clear(self):
@@ -124,6 +125,8 @@ class Ricottura:
         try:
             v = float(input(message))
             self.params[value] = v
+            if self.params["cooling_rate"] and self.params["target_temp"]:
+                self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
             if self.completo():
                 self.textMenu.enableExec()
         except:
@@ -131,30 +134,8 @@ class Ricottura:
             print("Invio per continuare...")
 
     def run(self):
-        if not self.completo():
-            print("Parametri incompleti!")
-            print(self.params)
-            input("Invio per continuare...")
-            return
-        print("Avvio con parametri:")
-        print(self)
-        t = self.params["temperatura"]
-        ti = self.params["heat_time"]
-        tc = self.params["cooling_time"]
-        print(f"Impostata temperatura: {t} per {ti} secondi, poi {tc} secondi per raffreddamento")
-        startTime = time.time()
-        elapsedTime = 0
-        while elapsedTime < ti:
-            print(f"Temperatura: {t} | Tempo: {elapsedTime:.2f}.")
-            time.sleep(0.2)
-            elapsedTime = time.time() - startTime
-        print("Riscaldamento terminato, raffreddamento:")
-        elapsedTime = 0
-        startTime = time.time()
-        while elapsedTime < tc:
-            print(f"Temperatura: {t} | Tempo: {elapsedTime:.2f}.")
-            time.sleep(0.2)
-            elapsedTime = time.time() - startTime
+        #TODO logica
+        
         print("Operazione terminata... ritorno al menu principale.")
         time.sleep(2)
         clearValues(self.params)
@@ -162,7 +143,7 @@ class Ricottura:
 
 
 class SaldaturaSMD:
-    def __init__(self):
+    def __init__(self,ctx):
         self.params = {
             "ph_temp": None,
             "ph_rate": None,
@@ -176,6 +157,7 @@ class SaldaturaSMD:
             "cooling_rate": None,
             "cooling_time_calc": None,           
         }
+        self.ctx = ctx
         self.textMenu = TextMenu("Saldatura SMD", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.textMenu.add_option("1", lambda: f"Imposta Pre-Heat time   : {self.params['ph_temp'] or '-'} [°C]", partial(self.setValue,"ph_temp","Target temperatura [°C]: "))
         self.textMenu.add_option("2", lambda: f"Imposta Pre-Heat rate   : {self.params['ph_rate'] or '-'} [°C/sec]\n    Pre-Heat time           : {self.params['ph_time_calc'] or '-'} [sec]", partial(self.setValue,"ph_rate","Target rate [°C/sec]: "))
@@ -210,6 +192,8 @@ class SaldaturaSMD:
             print("Invio per continuare...")
 
     def run(self):
+        #TODO manca logica
+        
         print("Saldatura eseguita / placeholder")
         time.sleep(2)
         clearValues(self.params)
