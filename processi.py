@@ -65,7 +65,7 @@ class Essicatura:
                 idsample = self.ctx.sq.getLastId("campioni")
                 self.ctx.lg.log(f"{idproc},{process},{idsample},{t:.2f},{avgTemp:.2f},{elapsedTime:.2f},{self.ctx.ssr_res.getState()},{self.ctx.ssr_fan.getState()}{sysTemp:.2f}\n")
                 
-                time.sleep(self.readInterval)
+                time.sleep(self.ctx.tc.interval)
                 elapsedTime = time.time() - start_time
             return "MAIN_MENU"
                 
