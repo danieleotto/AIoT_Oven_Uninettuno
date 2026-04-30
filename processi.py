@@ -75,6 +75,7 @@ class Essicatura:
                 
                 idsample = self.ctx.sq.getLastId("campioni")
                 self.ctx.lg.log(f"{idproc},{process},{idsample},{t:.2f},{avgTemp:.2f},{elapsedTime:.2f},{tempRate:.2f},{self.ctx.ssr_res.getState()},{self.ctx.ssr_fan.getState()},{sysTemp:.2f}\n")
+                print(f"Temp: {avgTemp:.2f}, time: {elapsedTime:.2f}, rate: {tempRate:.2f}, sample: {idsample}")
                 
                 time.sleep(self.ctx.tc.interval)
                 
