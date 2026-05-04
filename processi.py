@@ -68,6 +68,7 @@ class Essicatura:
             self.textMenu.enableExec()
         print("Preset caricato...")
         time.sleep(1)
+        return "BACK"
         
     
     def run(self):
@@ -192,6 +193,7 @@ class Ricottura:
             self.textMenu.enableExec()
         print("Preset caricato...")
         time.sleep(1)
+        return "BACK"
         
     
     def run(self):
@@ -296,6 +298,7 @@ class SaldaturaSMD:
             self.textMenu.enableExec()
         print("Preset caricato...")
         time.sleep(1)
+        return "BACK"
         
     
     def run(self):

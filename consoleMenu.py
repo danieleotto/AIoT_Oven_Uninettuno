@@ -104,7 +104,10 @@ class TextMenu:
                     if self.parent is None:
                         continue
                     else:
-                        return "MAIN_MENU"     
+                        return "MAIN_MENU"
+                
+                if result == "BACK":
+                    return
             else:
                 print(f"{ANSI.RED}Scelta non valida.{ANSI.RESET}")
                 input("Premi invio per continuare...")
