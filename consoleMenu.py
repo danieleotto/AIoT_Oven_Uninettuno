@@ -47,9 +47,9 @@ class TextMenu:
     def show(self):
         clear ()
         
-        print("\n"+"="*40)
+        print("\n"+"="*50)
         print(f"{self.color_title}{ANSI.BOLD}{self.title}{ANSI.RESET}")
-        print("="*40)
+        print("="*50)
         
         for key, opt in self.options.items():
             desc = opt["desc"]
@@ -67,12 +67,12 @@ class TextMenu:
                     print(f"\n{ANSI.GREEN}[{key}] {desc}{ANSI.RESET}")
                 else:
                     print(f"{self.color_option}[{key}] {desc}{ANSI.RESET}")
-        print("-"*40)
+        print("-"*50)
         if self.parent is None:
             print(f"{ANSI.YELLOW}[{self.exit_key}] Esci{ANSI.RESET}")
         else:
             print(f"{ANSI.YELLOW}[{self.exit_key}] Torna indietro{ANSI.RESET}")
-        print("-"*40)
+        print("-"*50)
     
     
     def run(self):
