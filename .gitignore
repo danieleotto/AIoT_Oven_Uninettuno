@@ -2,3 +2,5 @@
 /dht.py
 /__pycache__/
 /.idea/
+/database/
+/logs/

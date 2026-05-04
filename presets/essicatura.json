@@ -1,0 +1,16 @@
+{
+  "values":[
+    {
+        "id": "1",
+        "name": "PLA",
+        "target_temp": 45.0,
+        "heat_time": 21600
+    },
+    {
+        "id": "2",
+        "name": "PETG",
+        "target_temp": 65.0,
+        "heat_time": 28800
+    }
+  ] 
+}

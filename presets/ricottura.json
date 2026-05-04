@@ -1,0 +1,11 @@
+{
+  "values":[
+    {
+        "id": "1",
+        "name": "Nylon - PA16",
+        "target_temp": 110,
+        "reheat_duration": 100,
+        "cooling_rate": 3
+    }
+  ] 
+}

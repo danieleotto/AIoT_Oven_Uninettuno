@@ -41,8 +41,8 @@ class TextMenu:
         }
         
         if isinstance(action, TextMenu):
-            action.parent = self
-           
+            action.parent = self        
+       
             
     def show(self):
         clear ()
@@ -99,7 +99,7 @@ class TextMenu:
                     result = action.run()
                 else:
                     result = action()
-            
+
                 if result == "MAIN_MENU":
                     if self.parent is None:
                         continue
@@ -108,6 +108,7 @@ class TextMenu:
             else:
                 print(f"{ANSI.RED}Scelta non valida.{ANSI.RESET}")
                 input("Premi invio per continuare...")
+    
     
     def enableExec(self):
         for key,opt in self.options.items():

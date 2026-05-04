@@ -1,0 +1,15 @@
+{
+  "values":[
+    {
+        "id": "1",
+        "name": "Standad SMD",
+        "ph_temp": 150,
+        "ph_rate": 2.5,
+        "soak_time": 90,
+        "reflow_temp": 210,
+        "reflow_rate": 2.5,
+        "reflow_peak_time": 20,
+        "cooling_rate": 3
+    }
+  ] 
+}

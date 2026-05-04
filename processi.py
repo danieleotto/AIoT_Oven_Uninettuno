@@ -1,4 +1,4 @@
-import os, time
+import os, time, json
 from consoleMenu import TextMenu, ANSI
 from functools import partial
 from datetime import datetime
@@ -19,17 +19,36 @@ class Essicatura:
         }
         self.ctx = ctx
         self.textMenu = TextMenu("Essicatura", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
-        #self.presetMenu = TextMenu("Preset Essicatura", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
-        #self.textMenu.add_option("0", "Scegli preset di Essicatura",self.presetMenu)
+        self.presetMenu = TextMenu("Preset Essicatura", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        self.textMenu.add_option("P", "Presets di Essicatura\n",self.presetMenu)
         self.textMenu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['target_temp'] or '-'} [°C]", partial(self.setValue, "target_temp", "Target temperatura [°C]: "))
         self.textMenu.add_option("2", lambda: f"Imposta Durata      : {self.params['heat_time'] or '-'} [sec]", partial(self.setValue,"heat_time","Durata essicatura [sec]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
+        #TODO se esiste file preset carica
+        self.loadPresets("essicatura.json")
+        self.presetMenu.add_option("C", "Crea preset ", None)
+     
+        
+    def loadPresets(self, presetFile):
+        self.presetList={}
+        file = presetFile
+        fileName = os.path.join("presets", file)
+        with open(fileName) as fn:
+            presets = json.load(fn)            
+        for item in presets["values"]:
+            if item is presets["values"][-1]:
+                self.presetMenu.add_option(item["id"], item["name"]+"\n", partial(self.setValueFromPreset, item))
+            else:
+                self.presetMenu.add_option(item["id"], item["name"], partial(self.setValueFromPreset, item))
+    
     
     def clear(self):
         os.system("clear" if os.name=="posix" else "cls")
         
+        
     def completo(self):
         return all(v is not None for v in self.params.values())
+    
     
     def setValue(self, value, message):
         try:
@@ -39,8 +58,17 @@ class Essicatura:
                 self.textMenu.enableExec()
         except:
             print("Valore non valido.")
-            print("Invio per continuare...")
+            input("Invio per continuare...")
     
+    
+    def setValueFromPreset(self, item):
+        self.params["target_temp"] = item["target_temp"]
+        self.params["heat_time"] = item["heat_time"]
+        if self.completo():
+            self.textMenu.enableExec()
+        print("Preset caricato...")
+        time.sleep(1)
+        
     
     def run(self):
         process = "Essicatura"
@@ -91,7 +119,6 @@ class Essicatura:
             clearValues(self.params)
             return "MAIN_MENU"
                 
-
         except KeyboardInterrupt:
             print("\nProcesso terminato.")
             self.ctx.ssr_res.LOW()
@@ -110,16 +137,37 @@ class Ricottura:
         }
         self.ctx = ctx
         self.textMenu = TextMenu("Ricottura", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
+        self.presetMenu = TextMenu("Preset Ricottura", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        self.textMenu.add_option("P", "Presets di Ricottura\n",self.presetMenu)
         self.textMenu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['target_temp'] or '-'} [°C]", partial(self.setValue, "target_temp", "Target temperatura [°C]: "))
         self.textMenu.add_option("2", lambda: f"Imposta Heat Time   : {self.params['reheat_duration'] or '-'} [sec]", partial(self.setValue, "reheat_duration", "Durata ricottura [sec]: "))
-        self.textMenu.add_option("3", lambda: f"Imposta Cooling Rate: {self.params['cooling_rate'] or '-'} [°C/sec]\n    Cooling time   : {self.params["cooling_time_calc"] or '-'}", partial(self.setValue, "cooling_rate","Rate raffreddamento [°C/sec]: "))
+        self.textMenu.add_option("3", lambda: f"Imposta Cooling Rate: {self.params['cooling_rate'] or '-'} [°C/sec]\n    Cooling time        : {self.params['cooling_time_calc'] or '-'} [sec]", partial(self.setValue, "cooling_rate","Rate raffreddamento [°C/sec]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
-    
+        #TODO se esiste file preset carica
+        self.loadPresets("ricottura.json")
+        self.presetMenu.add_option("C", "Crea preset ", None)
+     
+        
+    def loadPresets(self, presetFile):
+        self.presetList={}
+        file = presetFile
+        fileName = os.path.join("presets", file)
+        with open(fileName) as fn:
+            presets = json.load(fn)            
+        for item in presets["values"]:
+            if item is presets["values"][-1]:
+                self.presetMenu.add_option(item["id"], item["name"]+"\n", partial(self.setValueFromPreset, item))
+            else:
+                self.presetMenu.add_option(item["id"], item["name"], partial(self.setValueFromPreset, item))
+
+
     def clear(self):
         os.system("clear" if os.name=="posix" else "cls")
+      
         
     def completo(self):
         return all(v is not None for v in self.params.values())
+    
     
     def setValue(self, value, message):
         try:
@@ -132,7 +180,20 @@ class Ricottura:
         except:
             print("Valore non valido.")
             print("Invio per continuare...")
-
+    
+    
+    def setValueFromPreset(self, item):
+        self.params["target_temp"] = item["target_temp"]
+        self.params["reheat_duration"] = item["reheat_duration"]
+        self.params["cooling_rate"] = item["cooling_rate"]
+        if self.params["cooling_rate"] and self.params["target_temp"]:
+            self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
+        if self.completo():
+            self.textMenu.enableExec()
+        print("Preset caricato...")
+        time.sleep(1)
+        
+    
     def run(self):
         #TODO logica
         
@@ -140,6 +201,7 @@ class Ricottura:
         time.sleep(2)
         clearValues(self.params)
         return "MAIN_MENU"
+
 
 
 class SaldaturaSMD:
@@ -159,6 +221,8 @@ class SaldaturaSMD:
         }
         self.ctx = ctx
         self.textMenu = TextMenu("Saldatura SMD", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
+        self.presetMenu = TextMenu("Preset Saldatura SMD", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        self.textMenu.add_option("P", "Presets di Saldatura SMD\n",self.presetMenu)
         self.textMenu.add_option("1", lambda: f"Imposta Pre-Heat time   : {self.params['ph_temp'] or '-'} [°C]", partial(self.setValue,"ph_temp","Target temperatura [°C]: "))
         self.textMenu.add_option("2", lambda: f"Imposta Pre-Heat rate   : {self.params['ph_rate'] or '-'} [°C/sec]\n    Pre-Heat time           : {self.params['ph_time_calc'] or '-'} [sec]", partial(self.setValue,"ph_rate","Target rate [°C/sec]: "))
         self.textMenu.add_option("3", lambda: f"Imposta Soak time       : {self.params['soak_time'] or '-'} [sec]", partial(self.setValue,"soak_time","Tempo soak [sec]: "))
@@ -167,9 +231,27 @@ class SaldaturaSMD:
         self.textMenu.add_option("6", lambda: f"Imposta Reflow peak time: {self.params['reflow_peak_time'] or '-'} [sec]", partial(self.setValue,"reflow_peak_time","Tempo peak [°C]: "))
         self.textMenu.add_option("7", lambda: f"Imposta Cooling rate    : {self.params['cooling_rate'] or '-'} [°C/sec]\n    Cooling time            : {self.params['cooling_time_calc'] or '-'} [sec]", partial(self.setValue,"cooling_rate","Target rate [sec]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
+        #TODO se esiste file preset carica
+        self.loadPresets("saldatura.json")
+        self.presetMenu.add_option("C", "Crea preset ", None)
+     
+        
+    def loadPresets(self, presetFile):
+        self.presetList={}
+        file = presetFile
+        fileName = os.path.join("presets", file)
+        with open(fileName) as fn:
+            presets = json.load(fn)            
+        for item in presets["values"]:
+            if item is presets["values"][-1]:
+                self.presetMenu.add_option(item["id"], item["name"]+"\n", partial(self.setValueFromPreset, item))
+            else:
+                self.presetMenu.add_option(item["id"], item["name"], partial(self.setValueFromPreset, item))
+
 
     def completo(self):
         return all(v is not None for v in self.params.values())
+        
         
     def setValue(self, value, message):
         try:
@@ -190,7 +272,32 @@ class SaldaturaSMD:
         except:
             print("Valore non valido.")
             print("Invio per continuare...")
+    
+    
+    def setValueFromPreset(self, item):
+        self.params["ph_temp"] = item["ph_temp"]
+        self.params["ph_rate"] = item["ph_rate"]
+        self.params["soak_time"] = item["soak_time"]
+        self.params["reflow_temp"] = item["reflow_temp"]
+        self.params["reflow_rate"] = item["reflow_rate"]
+        self.params["reflow_peak_time"] = item["reflow_peak_time"]
+        self.params["cooling_rate"] = item["cooling_rate"]
 
+        if self.params["ph_temp"] and self.params["ph_rate"]:
+            self.params["ph_time_calc"] = round((self.params["ph_temp"] - 20) / self.params["ph_rate"])
+        if self.params["ph_temp"]:
+            self.params["soak_temp_calc"] = self.params["ph_temp"]
+        if self.params["reflow_temp"] and self.params["reflow_rate"] and self.params["soak_temp_calc"]:
+            self.params["reflow_time_calc"] = round((self.params["reflow_temp"] - self.params["soak_temp_calc"]) / self.params["reflow_rate"])
+        if self.params["reflow_temp"] and self.params["cooling_rate"]:
+            self.params["cooling_time_calc"] = round((self.params["reflow_temp"] - 20) / self.params["cooling_rate"])
+
+        if self.completo():
+            self.textMenu.enableExec()
+        print("Preset caricato...")
+        time.sleep(1)
+        
+    
     def run(self):
         #TODO manca logica
         
