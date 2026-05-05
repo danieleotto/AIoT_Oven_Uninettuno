@@ -1,6 +1,5 @@
 import json
 from MAX6675lib import MAX6675
-from logger import FileLogger
 from sqlite3db import SQLite3DB
 from ssrelay import SSR
 from consoleMenu import TextMenu, ANSI
@@ -11,9 +10,8 @@ from processi import Essicatura, Ricottura, SaldaturaSMD
 
 
 class Context:
-    def __init__(self, tc, lg, sq, ssr_res, ssr_fan, dht22=None, pzem=None):
+    def __init__(self, tc, sq, ssr_res, ssr_fan, dht22=None, pzem=None):
         self.tc = tc
-        self.lg = lg
         self.sq = sq
         self.ssr_res = ssr_res
         self.ssr_fan = ssr_fan
@@ -33,7 +31,6 @@ interval = configData["sample_interval"]
 sample_size = configData["avg_sample_size"]
 
 tc = MAX6675(TC_PIN_SCK, TC_PIN_CS, TC_PIN_DO,sample_size,interval)
-lg = FileLogger()
 sq = SQLite3DB(configData["db_filename"])
 #dht22 = DHT22(DHT22_PIN)
 #pzem = PZEM004T(configData["PZEM_port"], configData["PZEM_timeout"])
@@ -41,7 +38,7 @@ sq = SQLite3DB(configData["db_filename"])
 ssr_res = SSR(RES_SSR_PIN)
 ssr_fan = SSR(FAN_SSR_PIN)
 
-ctx = Context(tc, lg, sq, ssr_res, ssr_fan)
+ctx = Context(tc, sq, ssr_res, ssr_fan)
 
 eProc = Essicatura(ctx)
 rProc = Ricottura(ctx)
@@ -54,7 +51,4 @@ menu_principale.add_option("3", "Saldatura SMD", sProc.textMenu)
 
 menu_principale.run()
 
-
-
-
-
+sq.logProcesses()

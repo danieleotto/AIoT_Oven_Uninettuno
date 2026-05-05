@@ -4,7 +4,7 @@ import time
 from collections import deque
 
 class MAX6675(object):
-    def __init__(self, pin_sck, pin_cs, pin_do,sample_size=1,interval=0.2):
+    def __init__(self, pin_sck, pin_cs, pin_do,sample_size,interval):
         self.PIN_SCK = pin_sck
         self.PIN_CS = pin_cs
         self.PIN_DO = pin_do
@@ -59,12 +59,6 @@ class MAX6675(object):
     def readTempF_average(self):
         avg_f = (self.readTempC_average() * (9/5)) + 32
         return avg_f
-
-
-# class MovingAverage:
-#     def __init__(self, sample_size):
-        # self.size = sample_size
-        # self.buffer = deque(maxlen=self.size)
 
     def addAvg(self, value):
         self.buffer.append(value)

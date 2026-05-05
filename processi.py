@@ -10,7 +10,7 @@ def clearValues(params):
     except:
         input("Errore cancellando i dati...")
 
-def timeConvertStr(timesec):
+def timeConvertStr(timesec, ms=False):
     parts = []
     if timesec is None:
         return None
@@ -30,12 +30,30 @@ def timeConvertStr(timesec):
         parts.append(f"{hr:.0f} [h]")
     if min>0:
         parts.append(f"{min:.0f} [m]")
-    if sec>0:
+    if sec>0 and ms == False:
         parts.append(f"{sec:.0f} [s]")
+    if sec>0 and ms == True:
+        parts.append(f"{sec:.3f} [s]")
     return " ".join(parts)
-
+        
+def loadPresets(self, presetFile, menu):
+    file = presetFile
+    fileName = os.path.join("presets", file)
+    with open(fileName) as fn:
+        presets = json.load(fn)            
+    for item in presets["values"]:
+        if item is presets["values"][-1]:
+            menu.add_option(item["id"], item["name"]+"\n", partial(self.setValueFromPreset, item))
+        else:
+            menu.add_option(item["id"], item["name"], partial(self.setValueFromPreset, item))
+        
+def completo(obj):
+    return all(v is not None for v in obj.params.values())
+    
 def todoPlaceh():
     input("\nNon ancora supportato. Premere qualunque tasto per continuare...\n")
+
+
 
 class Essicatura:
     def __init__(self,ctx):
@@ -44,6 +62,7 @@ class Essicatura:
             "heat_time": None
         }
         self.ctx = ctx
+        self.MAXTIME = 15 #secondi massimi per il cambio temperatura, per debug
         self.textMenu = TextMenu("Essicatura", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.presetMenu = TextMenu("Preset Essicatura", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
         self.textMenu.add_option("P", "Presets di Essicatura\n",self.presetMenu)
@@ -51,36 +70,15 @@ class Essicatura:
         self.textMenu.add_option("2", lambda: f"Imposta Durata      : {timeConvertStr(self.params['heat_time']) or '- [s]'}", partial(self.setValue,"heat_time","Durata essicatura [s]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
-        self.loadPresets("essicatura.json")
+        loadPresets(self,"essicatura.json",self.presetMenu)
         self.presetMenu.add_option("C", "Crea preset ", todoPlaceh)
      
-        
-    def loadPresets(self, presetFile):
-        self.presetList={}
-        file = presetFile
-        fileName = os.path.join("presets", file)
-        with open(fileName) as fn:
-            presets = json.load(fn)            
-        for item in presets["values"]:
-            if item is presets["values"][-1]:
-                self.presetMenu.add_option(item["id"], item["name"]+"\n", partial(self.setValueFromPreset, item))
-            else:
-                self.presetMenu.add_option(item["id"], item["name"], partial(self.setValueFromPreset, item))
-    
-    
-    def clear(self):
-        os.system("clear" if os.name=="posix" else "cls")
-        
-        
-    def completo(self):
-        return all(v is not None for v in self.params.values())
-    
-    
+         
     def setValue(self, value, message):
         try:
             v = float(input(message))
             self.params[value] = v
-            if self.completo():
+            if completo(self):
                 self.textMenu.enableExec()
         except:
             print("Valore non valido.")
@@ -90,7 +88,7 @@ class Essicatura:
     def setValueFromPreset(self, item):
         self.params["target_temp"] = item["target_temp"]
         self.params["heat_time"] = item["heat_time"]
-        if self.completo():
+        if completo(self):
             self.textMenu.enableExec()
         print("Preset caricato...")
         time.sleep(1)
@@ -98,51 +96,73 @@ class Essicatura:
         
     
     def run(self):
+        #TODO completare logica
         process = "Essicatura"
+        steps = {"heating":False, "dehydrating": False}
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         t = self.params["target_temp"]
         ti = self.params["heat_time"]
         elapsedTime = 0
         lastTime = 0
-        deltaTime = 0
-        lastTemp = 0
-        deltaTemp = 0
-        tempRate = 0
+        
         self.ctx.sq.addProcess(timestamp, process)
         try:
             print("Press CTRL+C to exit")
-            start_time = time.time()
-            while elapsedTime < ti:
-                #TODO logica reale
-                
-                avgTemp = self.ctx.tc.readTempC_average()
-                
-                if lastTemp != 0:
-                    deltaTemp = avgTemp-lastTemp
-                    deltaTime = elapsedTime-lastTime
+            startTime = heatStartTime = time.time()
+            lastTemp = self.ctx.tc.readTempC_average()
+            print("Inizio fase riscaldamento...")
+            while not steps["heating"]:
+                elapsedTime = time.time() - heatStartTime
+                deltaTime = elapsedTime - lastTime
+                if deltaTime > self.ctx.tc.interval:
+                    systemp = 0 #TODO add dht
+                    temp = self.ctx.tc.readTempC_average()
+                    deltaTemp = temp - lastTemp
                     tempRate = deltaTemp/deltaTime
-                
-                if avgTemp < t:
-                    self.ctx.ssr_res.HIGH()
-                else:
-                    self.ctx.ssr_res.LOW()
-
-                #sysTemp = dht22.getTemperature()
-                sysTemp = 22.0
-                idproc = self.ctx.sq.getLastId("listaprocessi")
-                self.ctx.sq.addSample(idproc, t, avgTemp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), sysTemp)
-                
-                idsample = self.ctx.sq.getLastId("campioni")
-                self.ctx.lg.log(f"{idproc},{process},{idsample},{t:.2f},{avgTemp:.2f},{elapsedTime:.2f},{tempRate:.2f},{self.ctx.ssr_res.getState()},{self.ctx.ssr_fan.getState()},{sysTemp:.2f}\n")
-                print(f"Temp: {avgTemp:.2f}, time: {elapsedTime:.2f}, rate: {tempRate:.2f}, sample: {idsample}")
-                
-                time.sleep(self.ctx.tc.interval)
-                
-                lastTemp = avgTemp
-                lastTime = elapsedTime
-                elapsedTime = time.time() - start_time
+                    if temp < t and elapsedTime < self.MAXTIME:
+                        self.ctx.ssr_res.HIGH()
+                        print(f"Heating... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
+                        #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
+                    else:
+                        self.ctx.ssr_res.LOW()
+                        print(f"Riscaldamento completato in {timeConvertStr(elapsedTime)}.")
+                        steps["heating"] = True
+                    lastTime = elapsedTime
+                    lastTemp = temp
+                    self.ctx.sq.addSample("heating", t, temp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(),systemp)
+                    
+            dehydrStartTime = time.time()
+            elapsedTime = 0
+            lastTime = 0
+            lastTemp = self.ctx.tc.readTempC_average()
+            print("Inizio fase essicazione...")
+            while not steps["dehydrating"]:
+                elapsedTime = time.time() - dehydrStartTime
+                deltaTime = elapsedTime - lastTime
+                if deltaTime > self.ctx.tc.interval:
+                    systemp = 0 #TODO add dht
+                    temp = self.ctx.tc.readTempC_average()
+                    deltaTemp = temp - lastTemp
+                    tempRate = deltaTemp/deltaTime
+                    if temp < t:
+                        self.ctx.ssr_res.HIGH()
+                    else:
+                        self.ctx.ssr_res.LOW()
+                    if elapsedTime < ti:
+                        print(f"Essicazione... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
+                    else:
+                        print(f"Essicazione completata in {timeConvertStr(elapsedTime)}.")
+                        steps["dehydrating"] = True
+                    lastTime = elapsedTime
+                    lastTemp = temp
+                    self.ctx.sq.addSample("soaking", t, temp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), systemp)
+            
+            processTime = time.time() - startTime
+            input(f"Processo completato in {timeConvertStr(processTime)}. Premere un tasto per continuare...")    
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
+            self.ctx.sq.processComplete(processTime, "OK")
+            self.ctx.sq.logSamples()
             clearValues(self.params)
             return "MAIN_MENU"
                 
@@ -150,6 +170,9 @@ class Essicatura:
             print("\nProcesso terminato.")
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
+            self.ctx.sq.processComplete(processTime, "ERROR")
+            self.ctx.sq.logSamples()
+            clearValues(self.params)
             return "MAIN_MENU"
         
 
@@ -163,6 +186,7 @@ class Ricottura:
             "cooling_time_calc": None
         }
         self.ctx = ctx
+        self.MAXTIME = 15 #secondi massimi per il cambio temperatura, per debug
         self.textMenu = TextMenu("Ricottura", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.presetMenu = TextMenu("Preset Ricottura", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
         self.textMenu.add_option("P", "Presets di Ricottura\n",self.presetMenu)
@@ -171,38 +195,17 @@ class Ricottura:
         self.textMenu.add_option("3", lambda: f"Imposta Cooling Rate: {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time        : {timeConvertStr(self.params['cooling_time_calc']) or '- [s]'}", partial(self.setValue, "cooling_rate","Rate raffreddamento [°C/s]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
-        self.loadPresets("ricottura.json")
+        loadPresets(self, "ricottura.json", self.presetMenu)
         self.presetMenu.add_option("C", "Crea preset ", todoPlaceh)
      
         
-    def loadPresets(self, presetFile):
-        self.presetList={}
-        file = presetFile
-        fileName = os.path.join("presets", file)
-        with open(fileName) as fn:
-            presets = json.load(fn)            
-        for item in presets["values"]:
-            if item is presets["values"][-1]:
-                self.presetMenu.add_option(item["id"], item["name"]+"\n", partial(self.setValueFromPreset, item))
-            else:
-                self.presetMenu.add_option(item["id"], item["name"], partial(self.setValueFromPreset, item))
-
-
-    def clear(self):
-        os.system("clear" if os.name=="posix" else "cls")
-      
-        
-    def completo(self):
-        return all(v is not None for v in self.params.values())
-    
-    
     def setValue(self, value, message):
         try:
             v = float(input(message))
             self.params[value] = v
             if self.params["cooling_rate"] and self.params["target_temp"]:
                 self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
-            if self.completo():
+            if completo(self):
                 self.textMenu.enableExec()
         except:
             print("Valore non valido.")
@@ -215,7 +218,7 @@ class Ricottura:
         self.params["cooling_rate"] = item["cooling_rate"]
         if self.params["cooling_rate"] and self.params["target_temp"]:
             self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
-        if self.completo():
+        if completo(self):
             self.textMenu.enableExec()
         print("Preset caricato...")
         time.sleep(1)
@@ -224,12 +227,108 @@ class Ricottura:
     
     def run(self):
         #TODO logica
+        process = "Ricottura"
+        steps = {"heating":False, "soak": False, "cooling": False}
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        t = self.params["target_temp"]
+        ti = self.params["reheat_duration"]
+        c = self.params["cooling_rate"]
+        ci = self.params["cooling_time_calc"]
+        elapsedTime = 0
+        lastTime = 0
         
-        print("Operazione terminata... ritorno al menu principale.")
-        time.sleep(2)
-        clearValues(self.params)
-        return "MAIN_MENU"
-
+        self.ctx.sq.addProcess(timestamp, process)
+        try:
+            print("Press CTRL+C to exit")
+            startTime = heatStartTime = time.time()
+            lastTemp = self.ctx.tc.readTempC_average()
+            print("Inizio fase riscaldamento...")
+            while not steps["heating"]:
+                elapsedTime = time.time() - heatStartTime
+                deltaTime = elapsedTime - lastTime
+                if deltaTime > self.ctx.tc.interval:
+                    systemp = 0 #TODO add dht
+                    temp = self.ctx.tc.readTempC_average()
+                    deltaTemp = temp - lastTemp
+                    tempRate = deltaTemp/deltaTime
+                    if temp < t and elapsedTime < self.MAXTIME:
+                        self.ctx.ssr_res.HIGH()
+                        print(f"Heating... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}...")
+                        #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
+                    else:
+                        self.ctx.ssr_res.LOW()
+                        print(f"Riscaldamento completato in {timeConvertStr(elapsedTime)}.")
+                        steps["heating"] = True
+                    lastTime = elapsedTime
+                    lastTemp = temp
+                    self.ctx.sq.addSample("heating", t, temp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), systemp)
+                
+            soakStartTime = time.time()
+            elapsedTime = 0
+            lastTime = 0
+            lastTemp = self.ctx.tc.readTempC_average()
+            print("Inizio fase mantenimento temperatura...")
+            while not steps["soak"]:
+                elapsedTime = time.time() - soakStartTime
+                deltaTime = elapsedTime - lastTime
+                if deltaTime > self.ctx.tc.interval:
+                    systemp = 0 #TODO add dht
+                    temp = self.ctx.tc.readTempC_average()
+                    deltaTemp = temp - lastTemp
+                    tempRate = deltaTemp/deltaTime
+                    if temp < t:
+                        self.ctx.ssr_res.HIGH()
+                    else:
+                        self.ctx.ssr_res.LOW()
+                    if elapsedTime < ti:
+                        print(f"Soaking... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}...")
+                    else:
+                        print(f"Soaking completato in {timeConvertStr(elapsedTime)}.")
+                        steps["soak"] = True
+                    lastTime = elapsedTime
+                    lastTemp = temp
+                    self.ctx.sq.addSample("soaking", t, temp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), systemp)
+                
+            coolStartTime = time.time()
+            elapsedTime = 0
+            lastTime = 0
+            lastTemp = self.ctx.tc.readTempC_average()
+            print("Inizio fase raffreddamento...")
+            while not steps["cooling"]:
+                elapsedTime = time.time() - coolStartTime
+                deltaTime = elapsedTime - lastTime
+                if deltaTime > self.ctx.tc.interval:
+                    systemp = 0 #TODO adddht
+                    temp = self.ctx.tc.readTempC_average()
+                    deltaTemp = temp - lastTemp
+                    tempRate = deltaTemp/deltaTime
+                    if elapsedTime < ci:
+                        print(f"Cooling... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}...")
+                    else:
+                        print(f"Cooling completato in {timeConvertStr(elapsedTime)}.")
+                        steps["cooling"] = True
+                    lastTime = elapsedTime
+                    lastTemp = temp
+                    self.ctx.sq.addSample("cooling", t, temp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), systemp)
+                    
+            processTime = time.time() - startTime
+            input(f"Processo completato in {timeConvertStr(processTime)}.\nPremere un tasto per continuare...")
+            self.ctx.ssr_res.LOW()
+            self.ctx.ssr_fan.LOW()
+            self.ctx.sq.processComplete(processTime, "OK")
+            self.ctx.sq.logSamples()
+            clearValues(self.params)
+            return "MAIN_MENU"
+        
+        except KeyboardInterrupt:
+            print("\nProcesso terminato.")
+            self.ctx.ssr_res.LOW()
+            self.ctx.ssr_fan.LOW()
+            self.ctx.sq.processComplete(processTime, "ERROR")
+            self.ctx.sq.logSamples()
+            clearValues(self.params)
+            return "MAIN_MENU"
+    
 
 
 class SaldaturaSMD:
@@ -260,26 +359,9 @@ class SaldaturaSMD:
         self.textMenu.add_option("7", lambda: f"Imposta Cooling rate    : {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time            : {timeConvertStr(self.params['cooling_time_calc']) or '- [s]'}", partial(self.setValue,"cooling_rate","Target rate [s]: "))
         self.textMenu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
-        self.loadPresets("saldatura.json")
+        loadPresets(self, "saldatura.json", self.presetMenu)
         self.presetMenu.add_option("C", "Crea preset ", todoPlaceh)
      
-        
-    def loadPresets(self, presetFile):
-        self.presetList={}
-        file = presetFile
-        fileName = os.path.join("presets", file)
-        with open(fileName) as fn:
-            presets = json.load(fn)            
-        for item in presets["values"]:
-            if item is presets["values"][-1]:
-                self.presetMenu.add_option(item["id"], item["name"]+"\n", partial(self.setValueFromPreset, item))
-            else:
-                self.presetMenu.add_option(item["id"], item["name"], partial(self.setValueFromPreset, item))
-
-
-    def completo(self):
-        return all(v is not None for v in self.params.values())
-        
         
     def setValue(self, value, message):
         try:
@@ -295,7 +377,7 @@ class SaldaturaSMD:
             if self.params["reflow_temp"] and self.params["cooling_rate"]:
                 self.params["cooling_time_calc"] = round((self.params["reflow_temp"] - 20) / self.params["cooling_rate"])
 
-            if self.completo():
+            if completo(self):
                 self.textMenu.enableExec()
         except:
             print("Valore non valido.")
@@ -320,7 +402,7 @@ class SaldaturaSMD:
         if self.params["reflow_temp"] and self.params["cooling_rate"]:
             self.params["cooling_time_calc"] = round((self.params["reflow_temp"] - 20) / self.params["cooling_rate"])
 
-        if self.completo():
+        if completo(self):
             self.textMenu.enableExec()
         print("Preset caricato...")
         time.sleep(1)
