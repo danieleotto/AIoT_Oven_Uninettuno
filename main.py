@@ -45,8 +45,8 @@ eProc = Essicatura(ctx)
 rProc = Ricottura(ctx)
 sProc = SaldaturaSMD(ctx)
 
-menu_principale = TextMenu("Menu Principale - Scelta Processo", color_title=ANSI.GREEN, color_option=ANSI.CYAN)
-menu_principale.add_option("1", "Essicatura", eProc.textMenu)
+menu_principale = TextMenu("             --- MENU PRINCIPALE ---", color_title=ANSI.GREEN, color_option=ANSI.CYAN)
+menu_principale.add_option("1", "Essicartura", eProc.textMenu)
 menu_principale.add_option("2", "Ricottura", rProc.textMenu)
 menu_principale.add_option("3", "Saldatura SMD", sProc.textMenu)
 
