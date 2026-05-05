@@ -46,17 +46,22 @@ class MAX6675(object):
     def readTempC_average(self):
         temp = self.readTC()
         if temp is not None:
-            self.addAvg(temp)
+            if len(self.buffer) == 10:
+                if -15 <  self.getAverage() - temp < 15:
+                    self.buffer.append(temp)
+            else:
+                if 0 < temp < 300:
+                    self.buffer.append(temp)
         else:
             print(f"\rTermocoppia non collegata.")
-        avg = self.getAverage()
+        if not self.buffer:
+            return None
+        else:
+            avg = self.getAverage()
         return avg
-
-
-    def addAvg(self, value):
-        self.buffer.append(value)
 
     def getAverage(self):
         if not self.buffer:
             return None
-        return sum(self.buffer) / len(self.buffer)
+        else:
+            return sum(self.buffer) / len(self.buffer)
