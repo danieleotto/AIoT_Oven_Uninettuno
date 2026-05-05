@@ -1,5 +1,5 @@
 import json
-from MAX6675lib import MAX6675
+from termocoppia import Termocoppia
 from sqlite3db import SQLite3DB
 from ssrelay import SSR
 from consoleMenu import TextMenu, ANSI
@@ -31,7 +31,7 @@ FAN_SSR_PIN = configData["FAN_SSR_PIN"]
 sample_size = configData["avg_sample_size"]
 sampling_interval = configData["sample_interval"]
 
-tc = MAX6675(TC_PIN_SCK, TC_PIN_CS, TC_PIN_DO,sample_size)
+tc = Termocoppia(TC_PIN_SCK, TC_PIN_CS, TC_PIN_DO,sample_size)
 sq = SQLite3DB(configData["db_filename"])
 #dht22 = DHT22(DHT22_PIN)
 #pzem = PZEM004T(configData["PZEM_port"], configData["PZEM_timeout"])
