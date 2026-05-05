@@ -1,4 +1,4 @@
-import os, time, json
+import os, time, json, sys
 from consoleMenu import TextMenu, ANSI
 from functools import partial
 from datetime import datetime
@@ -49,7 +49,21 @@ def loadPresets(self, presetFile, menu):
         
 def completo(obj):
     return all(v is not None for v in obj.params.values())
-    
+
+def printStatus(step, elapsed, temp, progress):
+    sys.stdout.write("\033[F\033[K")
+    sys.stdout.write("\033[F\033[K")
+    sys.stdout.write("\033[F\033[K")
+
+    print(f"{step} in corso... Temperatura attuale: {temp:.2f} °C")
+    print(f"Tempo trascorso: {timeConvertStr(elapsed, ms=True)}")
+
+    lunghezzaBarra = 40
+    percentBarra = int(lunghezzaBarra * progress)
+    barra = "O" * percentBarra + "." * (lunghezzaBarra - percentBarra)
+    textVal = int(progress*100)
+    print(f"[{barra}] {textVal}%")
+
 def todoPlaceh():
     input("\nNon ancora supportato. Premere qualunque tasto per continuare...\n")
 
@@ -110,7 +124,7 @@ class Essicatura:
             print("Press CTRL+C to exit")
             startTime = heatStartTime = time.time()
             lastTemp = self.ctx.tc.readTempC_average()
-            print("Inizio fase riscaldamento...")
+            print("Inizio fase riscaldamento...\n\n\n")
             while not steps["heating"]:
                 elapsedTime = time.time() - heatStartTime
                 deltaTime = elapsedTime - lastTime
@@ -121,7 +135,9 @@ class Essicatura:
                     tempRate = deltaTemp/deltaTime
                     if temp < t and elapsedTime < self.MAXTIME:
                         self.ctx.ssr_res.HIGH()
-                        print(f"Heating... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
+                        #print(f"Heating... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
+                        progress = min(temp / t, 1.0)
+                        printStatus("Riscaldamento", elapsedTime, temp, progress)
                         #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
                     else:
                         self.ctx.ssr_res.LOW()
@@ -135,7 +151,7 @@ class Essicatura:
             elapsedTime = 0
             lastTime = 0
             lastTemp = self.ctx.tc.readTempC_average()
-            print("Inizio fase essicazione...")
+            print("Inizio fase essicazione...\n\n\n")
             while not steps["dehydrating"]:
                 elapsedTime = time.time() - dehydrStartTime
                 deltaTime = elapsedTime - lastTime
@@ -149,7 +165,9 @@ class Essicatura:
                     else:
                         self.ctx.ssr_res.LOW()
                     if elapsedTime < ti:
-                        print(f"Essicazione... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
+                        #print(f"Essicazione... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
+                        progress = min(elapsedTime / ti, 1.0)
+                        printStatus("Essicatura", elapsedTime, temp, progress)
                     else:
                         print(f"Essicazione completata in {timeConvertStr(elapsedTime)}.")
                         steps["dehydrating"] = True
