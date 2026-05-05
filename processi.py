@@ -73,13 +73,15 @@ def printStatus(step, elapsed, temp, progress):
     print(f"[{barra}] {textVal}%")
 
 def primeThermocouple(ctx):
+    ctx.tc.buffer.clear()
     print(f"Inizializzazione sonda.\nEseguo {ctx.tc.sample_size} letture con intervallo {ctx.sampling_interval:.1f} s.\n")
-    for i in range(1,ctx.tc.sample_size + 1):
-        t = ctx.tc.readTempC_average()
-        time.sleep(ctx.sampling_interval)
-        sys.stdout.write("\033[F\033[K")
-        text = "* " * i + "  " * (ctx.tc.sample_size - i)
-        print(f"{text} {i}/{ctx.tc.sample_size}")
+    while len(ctx.tc.buffer) != ctx.tc.sample_size:
+        for i in range(1,ctx.tc.sample_size + 1):
+            t = ctx.tc.readTempC_average()
+            time.sleep(ctx.sampling_interval)
+            sys.stdout.write("\033[F\033[K")
+            text = "* " * i + "  " * (ctx.tc.sample_size - i)
+            print(f"{text} {i}/{ctx.tc.sample_size}")
     print("\n")
     return t
 
