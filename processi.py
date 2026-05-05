@@ -3,6 +3,9 @@ from consoleMenu import TextMenu, ANSI
 from functools import partial
 from datetime import datetime
 
+def clear():
+    os.system("clear" if os.name == "posix" else "cls")
+    
 def clearValues(params):
     try:
         for key,val in params.items():
@@ -58,9 +61,9 @@ def printStatus(step, elapsed, temp, progress):
     print(f"{step} in corso... Temperatura attuale: {temp:.2f} °C")
     print(f"Tempo trascorso: {timeConvertStr(elapsed, ms=True)}")
 
-    lunghezzaBarra = 40
+    lunghezzaBarra = 50
     percentBarra = int(lunghezzaBarra * progress)
-    barra = "O" * percentBarra + "." * (lunghezzaBarra - percentBarra)
+    barra = "█" * percentBarra + "_" * (lunghezzaBarra - percentBarra)
     textVal = int(progress*100)
     print(f"[{barra}] {textVal}%")
 
@@ -121,10 +124,11 @@ class Essicatura:
         
         self.ctx.sq.addProcess(timestamp, process)
         try:
-            print("Press CTRL+C to exit")
+            clear()
+            print("Press CTRL+C per interrompere il processo.\n")
             startTime = heatStartTime = time.time()
             lastTemp = self.ctx.tc.readTempC_average()
-            print("Inizio fase riscaldamento...\n\n\n")
+            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}\n\n\n")
             while not steps["heating"]:
                 elapsedTime = time.time() - heatStartTime
                 deltaTime = elapsedTime - lastTime
@@ -135,13 +139,13 @@ class Essicatura:
                     tempRate = deltaTemp/deltaTime
                     if temp < t and elapsedTime < self.MAXTIME:
                         self.ctx.ssr_res.HIGH()
-                        #print(f"Heating... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
                         progress = min(temp / t, 1.0)
                         printStatus("Riscaldamento", elapsedTime, temp, progress)
                         #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
                     else:
                         self.ctx.ssr_res.LOW()
-                        print(f"Riscaldamento completato in {timeConvertStr(elapsedTime)}.")
+                        printStatus("Riscaldamento", elapsedTime, temp, 1.0)
+                        print(f"Riscaldamento completato in {timeConvertStr(elapsedTime)}.\n\n")
                         steps["heating"] = True
                     lastTime = elapsedTime
                     lastTemp = temp
@@ -151,7 +155,7 @@ class Essicatura:
             elapsedTime = 0
             lastTime = 0
             lastTemp = self.ctx.tc.readTempC_average()
-            print("Inizio fase essicazione...\n\n\n")
+            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase essicazione...{ANSI.RESET}\n\n\n")
             while not steps["dehydrating"]:
                 elapsedTime = time.time() - dehydrStartTime
                 deltaTime = elapsedTime - lastTime
@@ -165,32 +169,34 @@ class Essicatura:
                     else:
                         self.ctx.ssr_res.LOW()
                     if elapsedTime < ti:
-                        #print(f"Essicazione... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}")
                         progress = min(elapsedTime / ti, 1.0)
                         printStatus("Essicatura", elapsedTime, temp, progress)
                     else:
-                        print(f"Essicazione completata in {timeConvertStr(elapsedTime)}.")
+                        printStatus("Essicatura", elapsedTime, temp, 1.0)
+                        self.ctx.ssr_res.LOW()
+                        print(f"Essicazione completata in {timeConvertStr(elapsedTime)}.\n\n")
                         steps["dehydrating"] = True
                     lastTime = elapsedTime
                     lastTemp = temp
                     self.ctx.sq.addSample("soaking", t, temp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), systemp)
             
             processTime = time.time() - startTime
-            input(f"Processo completato in {timeConvertStr(processTime)}. Premere un tasto per continuare...")    
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
             self.ctx.sq.processComplete(processTime, "OK")
             self.ctx.sq.logSamples()
             clearValues(self.params)
+            input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {timeConvertStr(processTime)}.\nPremere un tasto per continuare...{ANSI.RESET}\n")    
             return "MAIN_MENU"
                 
         except KeyboardInterrupt:
-            print("\nProcesso terminato.")
+            processTime = time.time() - startTime
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
             self.ctx.sq.processComplete(processTime, "ERROR")
             self.ctx.sq.logSamples()
             clearValues(self.params)
+            input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
 
@@ -257,10 +263,10 @@ class Ricottura:
         
         self.ctx.sq.addProcess(timestamp, process)
         try:
-            print("Press CTRL+C to exit")
+            print("Press CTRL+C per interrompere il processo.\n")
             startTime = heatStartTime = time.time()
             lastTemp = self.ctx.tc.readTempC_average()
-            print("Inizio fase riscaldamento...")
+            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}")
             while not steps["heating"]:
                 elapsedTime = time.time() - heatStartTime
                 deltaTime = elapsedTime - lastTime
@@ -271,10 +277,12 @@ class Ricottura:
                     tempRate = deltaTemp/deltaTime
                     if temp < t and elapsedTime < self.MAXTIME:
                         self.ctx.ssr_res.HIGH()
-                        print(f"Heating... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}...")
+                        progress = min(temp / t, 1.0)
+                        printStatus("Riscaldamento", elapsedTime, temp, progress)
                         #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
                     else:
                         self.ctx.ssr_res.LOW()
+                        printStatus("Riscaldamento", elapsedTime, temp, 1.0)
                         print(f"Riscaldamento completato in {timeConvertStr(elapsedTime)}.")
                         steps["heating"] = True
                     lastTime = elapsedTime
@@ -285,7 +293,7 @@ class Ricottura:
             elapsedTime = 0
             lastTime = 0
             lastTemp = self.ctx.tc.readTempC_average()
-            print("Inizio fase mantenimento temperatura...")
+            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...{ANSI.RESET}")
             while not steps["soak"]:
                 elapsedTime = time.time() - soakStartTime
                 deltaTime = elapsedTime - lastTime
@@ -299,8 +307,11 @@ class Ricottura:
                     else:
                         self.ctx.ssr_res.LOW()
                     if elapsedTime < ti:
-                        print(f"Soaking... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}...")
+                        progress = min(elapsedTime/ti, 1.0)
+                        printStatus("Ricottura", elapsedTime, temp, progress)
                     else:
+                        printStatus("Ricottura", elapsedTime, temp, 1.0)
+                        self.ctx.ssr_res.LOW()
                         print(f"Soaking completato in {timeConvertStr(elapsedTime)}.")
                         steps["soak"] = True
                     lastTime = elapsedTime
@@ -311,7 +322,7 @@ class Ricottura:
             elapsedTime = 0
             lastTime = 0
             lastTemp = self.ctx.tc.readTempC_average()
-            print("Inizio fase raffreddamento...")
+            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...{ANSI.RESET}")
             while not steps["cooling"]:
                 elapsedTime = time.time() - coolStartTime
                 deltaTime = elapsedTime - lastTime
@@ -321,8 +332,11 @@ class Ricottura:
                     deltaTemp = temp - lastTemp
                     tempRate = deltaTemp/deltaTime
                     if elapsedTime < ci:
-                        print(f"Cooling... Tempo trascorso: {timeConvertStr(elapsedTime, ms=True)}...")
+                        progress = min(elapsedTime / ci, 1.0)
+                        printStatus("Raffreddamento", elapsedTime, temp, progress)
                     else:
+                        printStatus("Raffreddamento", elapsedTime, temp, 1.0)
+                        self.ctx.ssr_res.LOW()
                         print(f"Cooling completato in {timeConvertStr(elapsedTime)}.")
                         steps["cooling"] = True
                     lastTime = elapsedTime
@@ -330,21 +344,22 @@ class Ricottura:
                     self.ctx.sq.addSample("cooling", t, temp, elapsedTime, tempRate, self.ctx.ssr_res.getState(), self.ctx.ssr_fan.getState(), systemp)
                     
             processTime = time.time() - startTime
-            input(f"Processo completato in {timeConvertStr(processTime)}.\nPremere un tasto per continuare...")
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
             self.ctx.sq.processComplete(processTime, "OK")
             self.ctx.sq.logSamples()
             clearValues(self.params)
+            input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {timeConvertStr(processTime)}.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
         except KeyboardInterrupt:
-            print("\nProcesso terminato.")
+            processTime = time.time() - startTime
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
             self.ctx.sq.processComplete(processTime, "ERROR")
             self.ctx.sq.logSamples()
             clearValues(self.params)
+            input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
     
 
