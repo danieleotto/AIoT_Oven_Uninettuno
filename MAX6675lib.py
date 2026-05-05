@@ -19,7 +19,7 @@ class MAX6675(object):
         wp.digitalWrite(self.PIN_CS, 1)
 
 
-    def readTempC(self):
+    def readTC(self):
         wp.digitalWrite(self.PIN_CS, 0)
         time.sleep(0.001)
 
@@ -44,7 +44,7 @@ class MAX6675(object):
 
     
     def readTempC_average(self):
-        temp = self.readTempC()
+        temp = self.readTC()
         if temp is not None:
             self.addAvg(temp)
         else:
