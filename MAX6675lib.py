@@ -4,12 +4,11 @@ import time
 from collections import deque
 
 class MAX6675(object):
-    def __init__(self, pin_sck, pin_cs, pin_do,sample_size,interval):
+    def __init__(self, pin_sck, pin_cs, pin_do,sample_size):
         self.PIN_SCK = pin_sck
         self.PIN_CS = pin_cs
         self.PIN_DO = pin_do
         self.sample_size = sample_size
-        self.interval = interval
         self.buffer = deque(maxlen=self.sample_size)
 
         wp.wiringPiSetup()
@@ -42,6 +41,7 @@ class MAX6675(object):
 
         temp_c = (value >> 3) * 0.25
         return temp_c
+
     
     def readTempC_average(self):
         temp = self.readTempC()
@@ -52,13 +52,6 @@ class MAX6675(object):
         avg = self.getAverage()
         return avg
 
-    def readTempF(self):
-        temp_f = (self.readTempC() * (9/5)) + 32
-        return temp_f
-
-    def readTempF_average(self):
-        avg_f = (self.readTempC_average() * (9/5)) + 32
-        return avg_f
 
     def addAvg(self, value):
         self.buffer.append(value)

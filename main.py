@@ -10,8 +10,9 @@ from processi import Essicatura, Ricottura, SaldaturaSMD
 
 
 class Context:
-    def __init__(self, thermocouple, database, ssr_resistance, ssr_ovenfan, dht22=None, pzem=None):
+    def __init__(self, thermocouple, sampling_interval, database, ssr_resistance, ssr_ovenfan, dht22=None, pzem=None):
         self.tc = thermocouple
+        self.sampling_interval = sampling_interval
         self.sq = database
         self.ssr_res = ssr_resistance
         self.ssr_fan = ssr_ovenfan
@@ -27,10 +28,10 @@ TC_PIN_DO = configData["TC_PIN_DO"]
 RES_SSR_PIN = configData["RES_SSR_PIN"]
 FAN_SSR_PIN = configData["FAN_SSR_PIN"]
 #DHT22_PIN = configData["DHT22_PIN"]
-interval = configData["sample_interval"]
 sample_size = configData["avg_sample_size"]
+sampling_interval = configData["sample_interval"]
 
-tc = MAX6675(TC_PIN_SCK, TC_PIN_CS, TC_PIN_DO,sample_size,interval)
+tc = MAX6675(TC_PIN_SCK, TC_PIN_CS, TC_PIN_DO,sample_size)
 sq = SQLite3DB(configData["db_filename"])
 #dht22 = DHT22(DHT22_PIN)
 #pzem = PZEM004T(configData["PZEM_port"], configData["PZEM_timeout"])
@@ -38,7 +39,7 @@ sq = SQLite3DB(configData["db_filename"])
 ssr_res = SSR(RES_SSR_PIN)
 ssr_fan = SSR(FAN_SSR_PIN)
 
-ctx = Context(tc, sq, ssr_res, ssr_fan)
+ctx = Context(tc, sampling_interval, sq, ssr_res, ssr_fan)
 
 eProc = Essicatura(ctx)
 rProc = Ricottura(ctx)

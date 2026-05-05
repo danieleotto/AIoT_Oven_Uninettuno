@@ -67,6 +67,17 @@ def printStatus(step, elapsed, temp, progress):
     textVal = int(progress*100)
     print(f"[{barra}] {textVal}%")
 
+def primeThermocouple(ctx):
+    print(f"Inizializzazione sonda.\nEseguo {ctx.tc.sample_size} letture con intervallo {ctx.sampling_interval:.1f} s.\n")
+    for i in range(1,ctx.tc.sample_size + 1):
+        t = ctx.tc.readTempC_average()
+        time.sleep(ctx.sampling_interval)
+        sys.stdout.write("\033[F\033[K")
+        text = "* " * i + "  " * (ctx.tc.sample_size - i)
+        print(f"{text} {i}/{ctx.tc.sample_size}")
+    print("\n")
+    return t
+    
 def todoPlaceh():
     input("\nNon ancora supportato. Premere qualunque tasto per continuare...\n")
 
@@ -108,7 +119,7 @@ class Essicatura:
         if completo(self):
             self.textMenu.enableExec()
         print("Preset caricato...")
-        time.sleep(1)
+        time.sleep(0.5)
         return "BACK"
         
     
@@ -127,12 +138,12 @@ class Essicatura:
             clear()
             print("Press CTRL+C per interrompere il processo.\n")
             startTime = heatStartTime = time.time()
-            lastTemp = self.ctx.tc.readTempC_average()
+            lastTemp = primeThermocouple(self.ctx)
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}\n\n\n")
             while not steps["heating"]:
                 elapsedTime = time.time() - heatStartTime
                 deltaTime = elapsedTime - lastTime
-                if deltaTime > self.ctx.tc.interval:
+                if deltaTime > self.ctx.sampling_interval:
                     systemp = 0 #TODO add dht
                     temp = self.ctx.tc.readTempC_average()
                     deltaTemp = temp - lastTemp
@@ -159,7 +170,7 @@ class Essicatura:
             while not steps["dehydrating"]:
                 elapsedTime = time.time() - dehydrStartTime
                 deltaTime = elapsedTime - lastTime
-                if deltaTime > self.ctx.tc.interval:
+                if deltaTime > self.ctx.sampling_interval:
                     systemp = 0 #TODO add dht
                     temp = self.ctx.tc.readTempC_average()
                     deltaTemp = temp - lastTemp
@@ -245,7 +256,7 @@ class Ricottura:
         if completo(self):
             self.textMenu.enableExec()
         print("Preset caricato...")
-        time.sleep(1)
+        time.sleep(0.5)
         return "BACK"
         
     
@@ -270,7 +281,7 @@ class Ricottura:
             while not steps["heating"]:
                 elapsedTime = time.time() - heatStartTime
                 deltaTime = elapsedTime - lastTime
-                if deltaTime > self.ctx.tc.interval:
+                if deltaTime > self.ctx.sampling_interval:
                     systemp = 0 #TODO add dht
                     temp = self.ctx.tc.readTempC_average()
                     deltaTemp = temp - lastTemp
@@ -297,7 +308,7 @@ class Ricottura:
             while not steps["soak"]:
                 elapsedTime = time.time() - soakStartTime
                 deltaTime = elapsedTime - lastTime
-                if deltaTime > self.ctx.tc.interval:
+                if deltaTime > self.ctx.sampling_interval:
                     systemp = 0 #TODO add dht
                     temp = self.ctx.tc.readTempC_average()
                     deltaTemp = temp - lastTemp
@@ -326,7 +337,7 @@ class Ricottura:
             while not steps["cooling"]:
                 elapsedTime = time.time() - coolStartTime
                 deltaTime = elapsedTime - lastTime
-                if deltaTime > self.ctx.tc.interval:
+                if deltaTime > self.ctx.sampling_interval:
                     systemp = 0 #TODO adddht
                     temp = self.ctx.tc.readTempC_average()
                     deltaTemp = temp - lastTemp
@@ -438,14 +449,13 @@ class SaldaturaSMD:
         if completo(self):
             self.textMenu.enableExec()
         print("Preset caricato...")
-        time.sleep(1)
+        time.sleep(0.5)
         return "BACK"
         
     
     def run(self):
         #TODO manca logica
         
-        print("Saldatura eseguita / placeholder")
-        time.sleep(2)
+        input("Saldatura eseguita / placeholder. Premere un tasto per continuare...")
         clearValues(self.params)
         return "MAIN_MENU"
