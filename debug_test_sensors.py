@@ -36,9 +36,9 @@ def tc_test(sampling):
         if tc.inizializza(sampling_interval=sampling, debug=True) is not None:
             print("\n")
             while True:
-                print(f"Buffer: {tc.buffer}  |  LastTemp: {t}  | LastAVG: {temp}")
                 t = tc.readTC()
                 temp = tc.readTempC_average()
+                print(f"Buffer: {tc.buffer}  |  LastTemp: {t}  | LastAVG: {temp}")
                 time.sleep(sampling)
         else:
             input("Sonda non rilevata, programma terminato.")
@@ -213,5 +213,3 @@ m.add_option("7","Test temperatura", partial(temp_test, sampling))
 
 
 m.run()
-
-
