@@ -16,13 +16,14 @@ startTime = lastTime = time.time()
 temp = t = 0
 sampling = 0.3
 try:
-    tc.inizializza(sampling_interval=sampling, debug=True)
-    print("\n")
-
-    while True:
-        print(f"Buffer: {tc.buffer}  |  LastTemp: {t}  | LastAVG: {temp}")
-        t = tc.readTC()
-        temp = tc.readTempC_average()
-        time.sleep(sampling)
+    if tc.inizializza(sampling_interval=sampling, debug=True) is not None:
+        print("\n")
+        while True:
+            print(f"Buffer: {tc.buffer}  |  LastTemp: {t}  | LastAVG: {temp}")
+            t = tc.readTC()
+            temp = tc.readTempC_average()
+            time.sleep(sampling)
+    else:
+        input("Sonda non rilevata, programma terminato.")
 except KeyboardInterrupt:
     input("Terminato")

@@ -90,10 +90,9 @@ class Termocoppia(object):
 
     def inizializza(self, sampling_interval, debug=False):
         self.buffer.clear()
+        print(f"Inizializzazione sonda.\nEseguo {self.sample_size} letture con intervallo {sampling_interval:.1f} s.\n\n")
         if debug:
             print(f"Buffer: {self.buffer}")
-            time.sleep(1)
-        print(f"Inizializzazione sonda.\nEseguo {self.sample_size} letture con intervallo {sampling_interval:.1f} s.\n")
         t = None #per evitare che venga ritornato prima di esistere
         counter = 0
         tentativi = 1
@@ -111,7 +110,7 @@ class Termocoppia(object):
             if counter >= self.sample_size * (tentativi):
                 tentativi += 1
                 if not ask_continue("Termocoppia non rilevata. Riprovare? [Y/n]: "):
-                    break
+                    return None
                 sys.stdout.write("\033[F\033[K")
         print("\n")
         return t

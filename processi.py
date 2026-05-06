@@ -81,7 +81,13 @@ def controlloTemperatura(elapsed, temp, target, step):
         pass
     else:
         raise ErroreTemperatura(step, elapsed, temp, target)
-    
+   
+def controlloSonda(result):
+    if result is None:
+        raise ErroreSonda
+    else:
+        return result
+ 
 def todoPlaceholder():
     input("Non ancora impelementato. Premere per continuare...")
 
@@ -139,7 +145,7 @@ class Essicatura:
             clear()
             printTitle(self.textMenu.title)
             print("Press CTRL+C per interrompere il processo.\n")
-            lastTemp = self.ctx.tc.inizializza(self.ctx.sampling_interval)
+            lastTemp = controlloSonda(self.ctx.tc.inizializza(self.ctx.sampling_interval))
             startTime = heatStartTime = time.time()
             MAX_TIME = (t - lastTemp) #per il momento lasciamo 1 grado/secondo come limite minimo di riscaldamento (per scaldarsi 50 gradi ha a disposiizone max 50 secondi)
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}\n\n\n")
@@ -236,6 +242,14 @@ class Essicatura:
             clearValues(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {timeConvertStr(e.elapsed, ms=True)}")
             print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
+            input("Premere un tasto per continuare...")
+            return "MAIN_MENU"
+        
+        except ErroreSonda as e:
+            self.ctx.ssr_res.LOW()
+            self.ctx.ssr_fan.LOW()
+            clearValues(self.params)
+            print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
 
@@ -428,6 +442,13 @@ class Ricottura:
             print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
+        
+        except ErroreSonda as e:
+            self.ctx.ssr_res.LOW()
+            self.ctx.ssr_fan.LOW()
+            clearValues(self.params)
+            return "MAIN_MENU"
+
 
 
 class SaldaturaSMD:
@@ -531,4 +552,7 @@ class ErroreTemperatura(Exception):
         self.temp = temp
         self.target = target
         super().__init__(f"Errore temperatura nella fase: {step}")
-        
+
+class ErroreSonda(Exception):
+    def __init__(self):
+        super().__init__(f"Errore lettura sonda.")
