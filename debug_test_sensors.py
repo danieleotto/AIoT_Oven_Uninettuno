@@ -2,9 +2,9 @@ from termocoppia import Termocoppia
 from ssrelay import SolidStateRelay
 from consoleMenu import TextMenu, ANSI
 from functools import partial
-from dht22 import DHT22
-from PZEM004Tlib import PZEM004T
-from PZEM004TModbuslib import PZEM004TModbus
+from tempsensor import TempSensor
+from customlib.PZEM004Tlib import PZEM004T
+from customlib.PZEM004TModbuslib import PZEM004TModbus
 import json, time, sys, os
 
 
@@ -196,7 +196,7 @@ sample_size = configData["avg_sample_size"]
 sampling = 0.3
 
 tc = Termocoppia(TC_SCK,TC_CS,TC_DO, sample_size)
-#dht22 = DHT22(DHT22_PIN)
+dht22 = TempSensor(DHT22_PIN)
 ssr_res = SolidStateRelay(RES_SSR_PIN)
 ssr_fan = SolidStateRelay(FAN_SSR_PIN)
 #pzem = PZEM004T(configData["PZEM_port"], configData["PZEM_timeout"])
@@ -206,7 +206,7 @@ m = TextMenu("Menu principale",ANSI.CYAN, ANSI.WHITE)
 m.add_option("1","Test Termocoppia", partial(tc_test, sampling))
 m.add_option("2","SSR Resistenze", partial(ssr_test, ssr_res, "Resistenze"))
 m.add_option("3","SSR Ventola", partial(ssr_test, ssr_fan, "Ventola"))
-#m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))
+m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))
 #m.add_option("5","Sensore PZEM004T", partial(pzem_test, pzem, sampling))
 #m.add_option("6","Sensore PZEM004T Modbus", partial(pzem2_test, pzem2, sampling))
 m.add_option("7","Test temperatura", partial(temp_test, sampling))

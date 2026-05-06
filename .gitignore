@@ -1,7 +1,7 @@
 /wiringpi.py
-/dht.py
 /modbus_tk/
 /__pycache__/
 /.idea/
 /database/
 /logs/
+/customlib/__pycache__/
