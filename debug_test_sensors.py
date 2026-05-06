@@ -5,7 +5,30 @@ from functools import partial
 from dht22 import DHT22
 from PZEM004Tlib import PZEM004T
 from PZEM004TModbuslib import PZEM004TModbus
-import json, time
+import json, time, sys, os
+
+
+if os.name=="nt":#windows
+    import msvcrt
+    def get_key():
+        if msvcrt.kbhit():
+            return msvcrt.getch().decode(errors="ignore")
+        return None
+    INTERRUPT_KEY = "s"
+else:
+    import select, termios, tty
+    def get_key():
+        dr, _, _ =select.select([sys.stdin], [], [], 0)
+        if dr:
+            old = termois.tcgetattr(sys.stdin)
+            try:
+                tty.setcbreak(sys.stdin.fileno())
+                return sys.stdin.read(1)
+            finally:
+                termios.tcsetattr(sys.stdin, termios.TCSADRAIN, old)
+        return None
+    INTERRUPT_KEY = "\x13"
+    
 
 def tc_test(sampling):
     try:
@@ -75,8 +98,90 @@ def pzem2_test(sensor, sampling):
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare...")
         return "MAIN MENU"
-    
-    
+
+def temp_test(sampling):
+    print("=== TEST SONDA ===")
+    print("CTRL+S → interrompe il ciclo e chiede nuova temperatura")
+    print("CTRL+C → termina il test\n")    
+    while True:
+        try:
+            try:
+                target = float(input("Inserisci temperatura:" ))
+            except ValueError:
+                print("Valore non valido")
+                continue
+            
+            print(f"\nAvvio ciclo per {target}°C...")
+            print("Premi CTRL+S per interrompere il ciclo corrente.\n")
+            
+            stop_cycle = False
+
+            # --- CICLO DI RISCALDAMENTO ---
+            start = time.time()
+            counter = 0
+            while True:
+                # lettura temperatura
+                counter +=1
+                temp = tc.readTempC_average()
+                if temp is None:
+                    temp = float(0)
+
+                # stampa stato
+                print(f"\rTemp attuale: {temp}°C   Target: {target}°C | Counter: {counter}", end="")
+
+                # controllo raggiungimento
+                if temp >= target:
+                    print("\nTarget raggiunto. Inizio mantenimento...")
+                    break
+
+                # controllo CTRL+S
+                key = get_key()
+                if key == INTERRUPT_KEY:  # CTRL+S
+                    stop_cycle = True
+                    print("\nInterruzione ciclo (CTRL+S).")
+                    break
+
+                time.sleep(0.2)
+
+            # se CTRL+S → torna a chiedere nuova temperatura
+            if stop_cycle:
+                continue
+
+            # --- CICLO DI MANTENIMENTO ---
+            print("Mantenimento in corso... (CTRL+S per interrompere)")
+            hold_start = time.time()
+
+            while True:
+                temp = tc.readTempC_average()
+                if temp is None:
+                    temp = float(0)
+                print(f"\rTemp attuale: {temp}°C   (mantenimento)", end="")
+
+                # esempio: mantieni ±3°C
+                if temp < target - 3:
+                    print("\nTemperatura scesa troppo. Fine mantenimento.")
+                    break
+
+                # controllo CTRL+S
+                key = get_key()
+                if key == INTERRUPT_KEY:  # CTRL+S
+                    stop_cycle = True
+                    print("\nInterruzione ciclo (CTRL+S).")
+                    break
+
+                time.sleep(0.2)
+
+            # se CTRL+S → torna a chiedere nuova temperatura
+            if stop_cycle:
+                continue
+
+            print("\nCiclo completato.\n")
+
+        except KeyboardInterrupt:
+            print("\n\n⛔ Test interrotto manualmente (CTRL+C).")
+            print("Uscita dal test sonda.")
+            break    
+        
 with open("config.json") as configFile:
     configData = json.load(configFile)
     
@@ -104,6 +209,7 @@ m.add_option("3","SSR Ventola", partial(ssr_test, ssr_fan, "Ventola"))
 #m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))
 #m.add_option("5","Sensore PZEM004T", partial(pzem_test, pzem, sampling))
 #m.add_option("6","Sensore PZEM004T Modbus", partial(pzem2_test, pzem2, sampling))
+m.add_option("7","Test temperatura", partial(temp_test, sampling))
 
 
 m.run()
