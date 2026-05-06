@@ -10,9 +10,9 @@ from processi import Essicatura, Ricottura, SaldaturaSMD
 
 
 class Context:
-    def __init__(self, thermocouple, sampling_interval, database, ssr_resistance, ssr_ovenfan, dht22=None, pzem=None):
+    def __init__(self, thermocouple, samplinginterval, database, ssr_resistance, ssr_ovenfan, dht22=None, pzem=None):
         self.tc = thermocouple
-        self.sampling_interval = sampling_interval
+        self.sampling_interval = samplinginterval
         self.sq = database
         self.ssr_res = ssr_resistance
         self.ssr_fan = ssr_ovenfan

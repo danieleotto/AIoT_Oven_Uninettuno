@@ -72,28 +72,15 @@ def printStatus(step, elapsed, temp, progress):
     textVal = int(progress*100)
     print(f"[{barra}] {textVal}%")
 
-def primeThermocouple(ctx):
-    ctx.tc.buffer.clear()
-    print(f"Inizializzazione sonda.\nEseguo {ctx.tc.sample_size} letture con intervallo {ctx.sampling_interval:.1f} s.\n")
-    while len(ctx.tc.buffer) != ctx.tc.sample_size:
-        for i in range(1,ctx.tc.sample_size + 1):
-            t = ctx.tc.readTempC_average()
-            time.sleep(ctx.sampling_interval)
-            sys.stdout.write("\033[F\033[K")
-            text = "* " * i + "  " * (ctx.tc.sample_size - i)
-            print(f"{text} {i}/{ctx.tc.sample_size}")
-    print("\n")
-    return t
-
 def controlloTimeout(elapsed, maxTime, step):
     if elapsed > maxTime:
-        raise erroreTimeout(step, elapsed, maxTime)
+        raise ErroreTimeout(step, elapsed, maxTime)
 
 def controlloTemperatura(elapsed, temp, target, step):
     if target*0.9 < temp < target*1.1:
         pass
     else:
-        raise erroreTemperatura(step, elapsed, temp, target)
+        raise ErroreTemperatura(step, elapsed, temp, target)
     
 def todoPlaceholder():
     input("Non ancora impelementato. Premere per continuare...")
@@ -145,7 +132,6 @@ class Essicatura:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         t = self.params["target_temp"]
         ti = self.params["heat_time"]
-        elapsedTime = 0
         lastTime = 0
         
         self.ctx.sq.addProcess(timestamp, process)
@@ -153,7 +139,7 @@ class Essicatura:
             clear()
             printTitle(self.textMenu.title)
             print("Press CTRL+C per interrompere il processo.\n")
-            lastTemp = primeThermocouple(self.ctx)
+            lastTemp = self.ctx.tc.inizializza(self.ctx.sampling_interval)
             startTime = heatStartTime = time.time()
             MAX_TIME = (t - lastTemp) #per il momento lasciamo 1 grado/secondo come limite minimo di riscaldamento (per scaldarsi 50 gradi ha a disposiizone max 50 secondi)
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}\n\n\n")
@@ -229,7 +215,7 @@ class Essicatura:
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
 
-        except erroreTimeout as e:
+        except ErroreTimeout as e:
             processTime = time.time() - startTime
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
@@ -241,7 +227,7 @@ class Essicatura:
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
 
-        except erroreTemperatura as e:
+        except ErroreTemperatura as e:
             processTime = time.time() - startTime
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
@@ -318,7 +304,7 @@ class Ricottura:
             clear()
             printTitle(self.textMenu.title)
             print("Press CTRL+C per interrompere il processo.\n")
-            lastTemp = primeThermocouple(self.ctx)
+            lastTemp = self.ctx.tc.inizializza(self.ctx.sampling_interval)
             startTime = heatStartTime = time.time()
             MAX_TIME = (t - lastTemp) #vedi commento su essicatura
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...\n\n\n{ANSI.RESET}")
@@ -419,7 +405,7 @@ class Ricottura:
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
 
-        except erroreTimeout as e:
+        except ErroreTimeout as e:
             processTime = time.time() - startTime
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
@@ -431,7 +417,7 @@ class Ricottura:
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
 
-        except erroreTemperatura as e:
+        except ErroreTemperatura as e:
             processTime = time.time() - startTime
             self.ctx.ssr_res.LOW()
             self.ctx.ssr_fan.LOW()
@@ -531,14 +517,14 @@ class SaldaturaSMD:
     
     
 
-class erroreTimeout(Exception):
+class ErroreTimeout(Exception):
     def __init__(self, step, elapsed, maxTime):
         self.step = step
         self.elapsed = elapsed
         self.maxTime = maxTime
         super().__init__(f"Errore timeout nella fase: {step}")
         
-class erroreTemperatura(Exception):
+class ErroreTemperatura(Exception):
     def __init__(self, step, elapsed, temp, target):
         self.step = step
         self.elapsed = elapsed
