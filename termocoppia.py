@@ -3,6 +3,23 @@ from wiringpi import GPIO
 import time, sys
 from collections import deque
 
+def ask_continue(domanda, isDefaultYes=True):
+    risposteok = ["y"]
+    rispostenotok = ["n"]
+    if isDefaultYes:
+        risposteok.append("")
+    else:
+        rispostenotok.append("")
+
+    while True:
+        risposta = input(domanda).strip().lower()
+        if risposta in risposteok:
+            return True
+        if risposta in rispostenotok:
+            return False
+        print("Answer not allowed. Press y or n.")
+
+
 class Termocoppia(object):
     def __init__(self, pin_sck, pin_cs, pin_do,sample_size):
         self.PIN_SCK = pin_sck
@@ -78,15 +95,24 @@ class Termocoppia(object):
             time.sleep(1)
         print(f"Inizializzazione sonda.\nEseguo {self.sample_size} letture con intervallo {sampling_interval:.1f} s.\n")
         t = None #per evitare che venga ritornato prima di esistere
+        counter = 0
+        tentativi = 1
         while len(self.buffer) != self.sample_size:
-            for i in range(1, self.sample_size + 1):
-                t = self.readTempC_average()
-                time.sleep(sampling_interval)
+            t = self.readTempC_average()
+            counter += 1
+            time.sleep(sampling_interval)
+            sys.stdout.write("\033[F\033[K")
+            if debug:
                 sys.stdout.write("\033[F\033[K")
-                text = "* " * i + "  " * (self.sample_size - i)
-                print(f"{text} {i}/{self.sample_size}")
-                if debug:
-                    print(f"Buffer: {self.buffer}  |  LastTemp: {self.buffer[-1]}  | LastAVG: {t}")
+            text = "* " * len(self.buffer) + "  " * (self.sample_size - len(self.buffer))
+            print(f"{text} {len(self.buffer)}/{self.sample_size} - Tentativo n: {counter}")
+            if debug:
+                print(f"Buffer: {self.buffer}  |  LastTemp:   | LastAVG: {t}")
+            if counter >= self.sample_size * (1 + tentativi):
+                tentativi += 1
+                if not ask_continue("Termocoppia non rilevata. Riprovare? [Y/n]: "):
+                    break
+                sys.stdout.write("\033[F\033[K")
         print("\n")
         return t
 
@@ -95,3 +121,4 @@ class Termocoppia(object):
             return None
         else:
             return sum(self.buffer) / len(self.buffer)
+
