@@ -1,5 +1,6 @@
 /wiringpi.py
 /dht.py
+/modbus_tk/
 /__pycache__/
 /.idea/
 /database/

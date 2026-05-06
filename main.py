@@ -1,7 +1,7 @@
 import json
 from termocoppia import Termocoppia
 from sqlite3db import SQLite3DB
-from ssrelay import SSR
+from ssrelay import SolidStateRelay
 from consoleMenu import TextMenu, ANSI
 from processi import Essicatura, Ricottura, SaldaturaSMD
 #from dht22 import DHT22
@@ -22,22 +22,22 @@ class Context:
 with open("config.json") as configFile:
     configData = json.load(configFile)
 
-TC_PIN_SCK = configData["TC_PIN_SCK"]
-TC_PIN_CS = configData["TC_PIN_CS"]
-TC_PIN_DO = configData["TC_PIN_DO"]
+TC_SCK_PIN = configData["TC_PIN_SCK"]
+TC_CS_PIN = configData["TC_PIN_CS"]
+TC_DO_PIN = configData["TC_PIN_DO"]
 RES_SSR_PIN = configData["RES_SSR_PIN"]
 FAN_SSR_PIN = configData["FAN_SSR_PIN"]
 #DHT22_PIN = configData["DHT22_PIN"]
 sample_size = configData["avg_sample_size"]
 sampling_interval = configData["sample_interval"]
 
-tc = Termocoppia(TC_PIN_SCK, TC_PIN_CS, TC_PIN_DO,sample_size)
+tc = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN,sample_size)
 sq = SQLite3DB(configData["db_filename"])
 #dht22 = DHT22(DHT22_PIN)
 #pzem = PZEM004T(configData["PZEM_port"], configData["PZEM_timeout"])
 #pzem2 = PZEM004TModbus() #aternativa da controllare
-ssr_res = SSR(RES_SSR_PIN)
-ssr_fan = SSR(FAN_SSR_PIN)
+ssr_res = SolidStateRelay(RES_SSR_PIN)
+ssr_fan = SolidStateRelay(FAN_SSR_PIN)
 
 ctx = Context(tc, sampling_interval, sq, ssr_res, ssr_fan)
 

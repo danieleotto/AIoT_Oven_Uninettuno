@@ -1,7 +1,7 @@
 import wiringpi as wp
 from wiringpi import GPIO
 
-class SSR(object):
+class SolidStateRelay(object):
     def __init__(self, PIN):
         self.PIN = PIN
         self.isOn = False
@@ -21,6 +21,12 @@ class SSR(object):
 
     def getState(self):
         if self.isOn:
-            return 1
+            return True
         else:
-            return 0
+            return False
+    
+    def toggleState(self):
+        if self.getState():
+            self.LOW()
+        else:
+            self.HIGH()
