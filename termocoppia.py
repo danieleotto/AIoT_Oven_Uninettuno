@@ -108,7 +108,7 @@ class Termocoppia(object):
             print(f"{text} {len(self.buffer)}/{self.sample_size} - Tentativo n: {counter}")
             if debug:
                 print(f"Buffer: {self.buffer}  |  LastTemp:   | LastAVG: {t}")
-            if counter >= self.sample_size * (1 + tentativi):
+            if counter >= self.sample_size * (tentativi):
                 tentativi += 1
                 if not ask_continue("Termocoppia non rilevata. Riprovare? [Y/n]: "):
                     break
