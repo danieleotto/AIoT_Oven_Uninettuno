@@ -435,6 +435,7 @@ class Ricottura:
 
 
 class SaldaturaSMD:
+    """Gestisce il processo di saldatura SMD per reflow."""
     def __init__(self, ctx:Context) -> None:
         self.params = {
             "ph_temp": None,

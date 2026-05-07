@@ -50,22 +50,24 @@ def tc_test(sampling:float) -> str:
 
 def ssr_test(ssr: SolidStateRelay, nome: str) -> str:
     print(f"Test SSR {nome}, acceso 10 secondi, spento 10 secondi.\nCTRL+C per terminare.")
-    last_time = time.time()
+    last_time:float = time.time()
     ssr.LOW()
-    print(f"SSR {nome} stato: {ssr.get_state()}")
     try:
         while True:
             elapsed_time = time.time()
             delta_time = elapsed_time - last_time
             if delta_time > 10:
                 ssr.toggle_state()
-                print(f"SSR {nome} stato: {ssr.get_state()}")
                 last_time = elapsed_time
+            else:
+                remaining = 10 - (delta_time % 10)
+            print(f"SSR {nome} stato: {ssr.get_state()} | cambio in {remaining:.0f} s.")
+            sys.stdout.write("\033[F\033[K")
         
     except KeyboardInterrupt:
         ssr.LOW()
         input("\nTerminato. Premere un tasto per continuare...")
-        return "MAIN MENU"
+        return "MAIN_MENU"
 
 
 def dht22_test(dht:TempSensor, sampling:float) -> str:
@@ -78,7 +80,7 @@ def dht22_test(dht:TempSensor, sampling:float) -> str:
             time.sleep(sampling)
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare...")
-        return "MAIN MENU"
+        return "MAIN_MENU"
 
 
 def pzem_test(sensor, sampling:float) -> str:
