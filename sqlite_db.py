@@ -1,8 +1,9 @@
 import sqlite3, os
-from datetime import datetime
+from customlib.functions import get_timestamp
 
-class SQLite3DB:
-    def __init__(self, filename):
+
+class SQLiteDB:
+    def __init__(self, filename:str) -> None:
         self.DB_DIR = "database"
         self.DB_FILE = os.path.join(self.DB_DIR, filename)
         os.makedirs(self.DB_DIR, exist_ok=True)
@@ -35,73 +36,83 @@ class SQLite3DB:
         )""")
         self.conn.commit()
 
-    def addSample(self, step, temptarget, tempoven, elapsedtime, temprate, ssr1state, ssr2state, sysTemp):
-        idproc = self.getLastId("listaprocessi")
+
+    def add_sample(self, step:str, temp_target:float, temp_oven:float, elapsed_time:float, temp_rate:float, ssr_res_state:bool, ssr_fan_state:bool, sys_temp:float) -> None:
+        idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
             "INSERT INTO campioni (idproc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (idproc, step, temptarget, tempoven, elapsedtime, temprate, ssr1state, ssr2state, sysTemp)
+            (idproc, step, temp_target, temp_oven, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp)
         )
         self.conn.commit()
 
-    def addProcess(self, timestamp, processo):
+
+    def add_process(self, timestamp:str, processo:str) -> None:
         self.cursor.execute(
             "INSERT INTO listaprocessi (timestamp, processo) VALUES (?, ?)",
             (timestamp, processo)
         )
         self.conn.commit()
     
-    def processComplete(self, duration, state):
-        lastId = self.getLastId("listaprocessi")
+    
+    def process_complete(self, duration:float, state:str) -> None:
+        last_id = self.get_last_id("listaprocessi")
         self.cursor.execute(
             "UPDATE listaprocessi SET duration = ?, state = ? WHERE idProc = ?",
-            (duration, state, lastId)
+            (duration, state, last_id)
         )
         self.conn.commit()
 
-    def readAllSamples(self):
+
+    def read_all_samples(self) -> list:
         self.cursor.execute("SELECT * FROM campioni ORDER BY id ASC")
         return self.cursor.fetchall()
     
-    def readSamplesByIdProc(self, idProc):
-        query = f"SELECT * FROM campioni WHERE idProc = {idProc}"
+    
+    def read_samples_by_id(self, id_proc:str) -> list:
+        query = f"SELECT * FROM campioni WHERE idProc = {id_proc}"
         self.cursor.execute(query)
         return self.cursor.fetchall()
 
-    def readAllProcesses(self):
+
+    def read_all_processes(self) -> list:
         self.cursor.execute("SELECT * FROM listaprocessi ORDER BY idProc ASC")
         return self.cursor.fetchall()
 
-    def getLastId(self, tablename):
+
+    def get_last_id(self, tablename:str):
+        #TODO return type
         query = f"SELECT * FROM {tablename} ORDER BY 1 DESC LIMIT 1"
         self.cursor.execute(query)
         r = self.cursor.fetchone()
         return r[0] if r else None
     
-    def logSamples(self):
-        last_id = self.getLastId("listaprocessi")
+    
+    def log_samples(self) -> None:
+        last_id = self.get_last_id("listaprocessi")
         query = f"SELECT timestamp FROM listaprocessi WHERE idProc = {last_id}"
         self.cursor.execute(query)
-        timeStamp = self.cursor.fetchone()[0]
-        LOG_FILE = str(timeStamp) + f"_{last_id}_ProcessLog.csv"
+        timestamp = self.cursor.fetchone()[0]
+        LOG_FILE = str(timestamp) + f"_{last_id}_ProcessLog.csv"
         LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
-        sampleList = self.readSamplesByIdProc(last_id)
+        sample_list = self.read_samples_by_id(last_id)
         
         with open(LOG_FILENAME, "a", encoding="utf-8") as file:
             if file.tell() == 0:
                 file.write("id, idProc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp\n")
-            for sample in sampleList:
-                textLine = ",".join(str(value) for value in sample)
-                file.write(textLine + "\n")
+            for sample in sample_list:
+                text_line = ",".join(str(value) for value in sample)
+                file.write(text_line + "\n")
     
-    def logProcesses(self):
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        LOG_FILE = str(timestamp) + "_List.csv"
+    
+    def log_processes(self) -> None:
+        timestamp = get_timestamp()
+        LOG_FILE = timestamp + "_List.csv"
         LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
-        processList = self.readAllProcesses()
+        process_list = self.read_all_processes()
         
         with open(LOG_FILENAME, "a", encoding="utf-8") as file:
             if file.tell() == 0:
                 file.write("idProc, timestamp, processo, duration, state\n")
-            for process in processList:
-                textLine = ",".join(str(value) for value in process)
-                file.write(textLine + "\n")
+            for process in process_list:
+                text_line = ",".join(str(value) for value in process)
+                file.write(text_line + "\n")

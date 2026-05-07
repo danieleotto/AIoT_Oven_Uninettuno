@@ -1,27 +1,13 @@
 import wiringpi as wp
-from wiringpi import GPIO
 import time, sys
+from wiringpi import GPIO
 from collections import deque
-
-def ask_continue(domanda, isDefaultYes=True):
-    risposteok = ["y"]
-    rispostenotok = ["n"]
-    if isDefaultYes:
-        risposteok.append("")
-    else:
-        rispostenotok.append("")
-
-    while True:
-        risposta = input(domanda).strip().lower()
-        if risposta in risposteok:
-            return True
-        if risposta in rispostenotok:
-            return False
-        print("Answer not allowed. Press y or n.")
+from customlib.functions import ask_continue
+from customlib.classes import ErroreSonda
 
 
-class Termocoppia(object):
-    def __init__(self, pin_sck, pin_cs, pin_do,sample_size):
+class Termocoppia:
+    def __init__(self, pin_sck:int, pin_cs:int, pin_do:int, sample_size:int) -> None:
         self.PIN_SCK = pin_sck
         self.PIN_CS = pin_cs
         self.PIN_DO = pin_do
@@ -37,7 +23,7 @@ class Termocoppia(object):
         wp.digitalWrite(self.PIN_CS, 1)
 
 
-    def readTC(self):
+    def _read_tc(self) -> float | None:
         wp.digitalWrite(self.PIN_CS, 0)
         time.sleep(0.001)
 
@@ -61,11 +47,11 @@ class Termocoppia(object):
         return temp_c
 
     
-    def readTempC_average(self):
-        temp = self.readTC()
+    def read_temp_average(self) -> float | None:
+        temp = self._read_tc()
         if temp is not None:
             if len(self.buffer) == 10:
-                avg = self.getAverage()
+                avg = self._get_average()
                 if -15 < temp -avg < 15:
                     self.buffer.append(temp)
             else:
@@ -74,13 +60,14 @@ class Termocoppia(object):
             if not self.buffer:
                 return None
             else:
-                return self.getAverage()
+                return self._get_average()
         else:
             return None
 
 
-    def safeReadTemp(self):
-        temp = self.readTC()
+    def safe_read_temp(self) -> float | None:
+        #TODO logic
+        temp = self._read_tc()
         if temp is not None:
             #LETTURA
             pass
@@ -88,7 +75,7 @@ class Termocoppia(object):
             print(f"\rTermocoppia non collegata.")
 
 
-    def inizializza(self, sampling_interval, debug=False):
+    def _inizializza(self, sampling_interval:float, debug:bool = False) -> float | None:
         self.buffer.clear()
         print(f"Inizializzazione sonda.\nEseguo {self.sample_size} letture con intervallo {sampling_interval:.1f} s.\n\n")
         if debug:
@@ -97,7 +84,7 @@ class Termocoppia(object):
         counter = 0
         tentativi = 1
         while len(self.buffer) != self.sample_size:
-            t = self.readTempC_average()
+            t = self.read_temp_average()
             counter += 1
             time.sleep(sampling_interval)
             sys.stdout.write("\033[F\033[K")
@@ -115,9 +102,17 @@ class Termocoppia(object):
         print("\n")
         return t
 
-    def getAverage(self):
+
+    def _get_average(self) -> float | None:
         if not self.buffer:
             return None
         else:
             return sum(self.buffer) / len(self.buffer)
-
+        
+    
+    def controllo_sonda(self, sampling_interval:float, debug:bool = False) -> float:
+        result = self._inizializza(sampling_interval, debug)
+        if result is None:
+            raise ErroreSonda
+        else:
+            return result
