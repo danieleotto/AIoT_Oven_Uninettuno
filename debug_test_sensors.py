@@ -3,6 +3,7 @@ from ss_relay import SolidStateRelay
 from console_menu import TextMenu, ANSI
 from functools import partial
 from temp_sensor import TempSensor
+from customlib.classes import ErroreSonda
 #from customlib.PZEM004Tlib import PZEM004T
 #from customlib.PZEM004TModbuslib import PZEM004TModbus
 import json, time, sys, os
@@ -41,10 +42,13 @@ def tc_test(sampling_time:float) -> str:
                 print(f"Buffer: {tc.buffer}  |  LastTemp: {t:.1f}  | LastAVG: {temp:.1f}")
                 time.sleep(sampling_time)
         else:
-            input("Sonda non rilevata, programma terminato.\nPremere un tasto per continuare...")
-            return "MAIN_MENU"
+            raise ErroreSonda
+        
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare")
+        return "MAIN_MENU"
+    except ErroreSonda:
+        input("Sonda non rilevata, programma terminato.\nPremere un tasto per continuare...")
         return "MAIN_MENU"
 
 
@@ -187,9 +191,6 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
             ssr.turn_off()
             print("\n\nTest interrotto manualmente (CTRL+C).")
             print("Uscita dal test sonda.")
-            return "MAIN_MENU"
-
-        finally:
             return "MAIN_MENU"
 
 
