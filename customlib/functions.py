@@ -19,28 +19,27 @@ def get_timestamp(readable:bool = True) -> str:
     
 def time_convert_str(timesec:float, ms:bool = False) -> str:
     parts:list = []
-    sec:float = 0
-    min:float = 0
-    hr:float = 0
+    minutes:float = 0
+    hours:float = 0
     if timesec is None:
-        return None
-    elif timesec >= 60 and timesec < 3600:
-        sec = timesec % 60
-        min = (timesec - sec)/60
+        return "Nan"
+    elif 60 <= timesec < 3600:
+        seconds = timesec % 60
+        minutes = (timesec - seconds) / 60
     elif timesec >= 3600:
-        sec = timesec % 60
-        min = ((timesec - sec) / 60) % 60 
-        hr = (timesec - min - sec)/3600
+        seconds = timesec % 60
+        minutes = ((timesec - seconds) / 60) % 60
+        hours = (timesec - minutes - seconds) / 3600
     else:
-        sec = timesec
-    if hr>0:
-        parts.append(f"{hr:.0f} [h]")
-    if min>0:
+        seconds = timesec
+    if hours > 0:
+        parts.append(f"{hours:.0f} [h]")
+    if minutes > 0:
         parts.append(f"{min:.0f} [m]")
-    if sec>0 and ms == False:
-        parts.append(f"{sec:.0f} [s]")
-    if sec>0 and ms == True:
-        parts.append(f"{sec:.3f} [s]")
+    if seconds > 0 and ms == False:
+        parts.append(f"{seconds:.0f} [s]")
+    else:
+        parts.append(f"{seconds:.3f} [s]")
     return " ".join(parts)
 
 

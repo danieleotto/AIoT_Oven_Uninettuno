@@ -13,19 +13,19 @@ class Context:
     def __init__(
         self, 
         thermocouple:Termocoppia,
-        sampling_interval:float,
+        si:float,
         database:SQLiteDB,
         ssr_resistance:SolidStateRelay,
-        ssr_fan:SolidStateRelay,
+        ssr_ovenfan:SolidStateRelay,
         dht22:TempSensor = None,
         pzem = None
     ) -> None:
         #TODO pzem sensor type
         self.tc = thermocouple
-        self.sampling_interval = sampling_interval
+        self.sampling_interval = si
         self.sq = database
         self.ssr_res = ssr_resistance
-        self.ssr_fan = ssr_fan
+        self.ssr_fan = ssr_ovenfan
         self.dht22 = dht22
         self.pzem = pzem
 

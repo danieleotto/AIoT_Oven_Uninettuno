@@ -6,7 +6,7 @@ class TempSensor:
         self.sensor_type = sensor_type
         self.sensor = dht.DHT(self.pin, self.sensor_type)
     
-    def _read(self) -> float:
+    def _read(self) -> tuple[float, float]:
         result = self.sensor.read()
         if result.is_valid():
             return result.temperature, result.humidity

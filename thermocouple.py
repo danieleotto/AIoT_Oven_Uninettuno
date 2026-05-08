@@ -6,6 +6,13 @@ from customlib.functions import ask_continue
 from customlib.classes import ErroreSonda
 
 
+def debug_buffer_print(buffer:deque) -> str:
+    string = "("
+    string += ", ".join(str(e) for e in buffer)
+    string += ")"
+    return string
+
+
 class Termocoppia:
     def __init__(self, pin_sck:int, pin_cs:int, pin_do:int, sample_size:int) -> None:
         self.PIN_SCK = pin_sck
@@ -65,21 +72,15 @@ class Termocoppia:
             return None
 
 
-    def safe_read_temp(self) -> float | None:
-        #TODO logic
-        temp = self._read_tc()
-        if temp is not None:
-            #LETTURA
-            pass
-        else:
-            print(f"\rTermocoppia non collegata.")
+    def read_raw_temp(self) -> float | None:
+        return self._read_tc()
 
 
     def _inizializza(self, sampling_interval:float, debug:bool = False) -> float | None:
         self.buffer.clear()
         print(f"Inizializzazione sonda.\nEseguo {self.sample_size} letture con intervallo {sampling_interval:.1f} s.\n\n")
         if debug:
-            print(f"Buffer: {self.buffer}")
+            print(f"{debug_buffer_print(self.buffer)}")
         t = None #per evitare che venga ritornato prima di esistere
         counter = 0
         tentativi = 1
@@ -93,14 +94,22 @@ class Termocoppia:
             text = "* " * len(self.buffer) + "  " * (self.sample_size - len(self.buffer))
             print(f"{text} {len(self.buffer)}/{self.sample_size} - Tentativo n: {counter}")
             if debug:
-                print(f"Buffer: {self.buffer}  |  LastTemp:   | LastAVG: {t}")
-            if counter > self.sample_size * (tentativi):
+                print(f"Buffer: {debug_buffer_print(self.buffer)}  | LastAVG: {t}")
+            if counter > self.sample_size * tentativi:
                 tentativi += 1
                 if not ask_continue("Termocoppia non rilevata. Riprovare? [Y/n]: "):
                     return None
                 sys.stdout.write("\033[F\033[K")
         print("\n")
         return t
+
+
+    def read_temp_safe(self) -> float:
+        temp = self.read_temp_average()
+        if temp is None:
+            raise ErroreSonda
+        else:
+            return temp
 
 
     def _get_average(self) -> float | None:
@@ -115,4 +124,4 @@ class Termocoppia:
         if result is None:
             raise ErroreSonda
         else:
-            return result
+            return float(result)

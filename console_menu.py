@@ -1,3 +1,5 @@
+from typing import Any
+
 from customlib.functions import clear_console
 
 class ANSI:
@@ -41,7 +43,7 @@ class TextMenu:
         self.color_option = color_option
         
         
-    def add_option(self, key:str , description:str , action, disabled:bool = False, executable:bool = False) -> None:
+    def add_option(self, key:str , description:str, action, disabled:bool = False, executable:bool = False) -> None:
         self.options[key] = {
             "desc": description,
             "action": action,
@@ -60,11 +62,13 @@ class TextMenu:
         print("="*50)
         
         for key, opt in self.options.items():
-            desc:str = opt["desc"]
+            desc:Any = opt["desc"]
             disabled:str = opt["disabled"]
             is_executable:bool = opt["exec"]
             if callable(desc):
                 desc = desc()
+            else:
+                desc = str(desc)
             if disabled:
                 if is_executable:
                     print(f"\n{ANSI.GREY}[{key}] {desc} (disabilitato){ANSI.RESET}")
@@ -93,7 +97,7 @@ class TextMenu:
                     print(f"{ANSI.RED}Uscita dal programma.{ANSI.RESET}")
                     break
                 else:
-                    return
+                    return None
                 
             if choice in self.options:
                 opt = self.options[choice]
@@ -115,7 +119,7 @@ class TextMenu:
                         return "MAIN_MENU"
                 
                 if result == "BACK":
-                    return
+                    return None
             else:
                 print(f"{ANSI.RED}Scelta non valida.{ANSI.RESET}")
                 input("Premi invio per continuare...")
@@ -123,7 +127,7 @@ class TextMenu:
     
     def enable_exec(self) -> None:
         for key,opt in self.options.items():
-            if opt["exec"] == True:
+            if opt["exec"]:
                 opt["disabled"] = False
                 
             

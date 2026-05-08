@@ -2,32 +2,32 @@ import wiringpi as wp
 from wiringpi import GPIO
 
 class SolidStateRelay:
-    def __init__(self, PIN:int) -> None:
-        self.PIN = PIN
+    def __init__(self, pin:int) -> None:
+        self.pin = pin
         self.is_On:bool = False
 
         wp.wiringPiSetup()
-        wp.pinMode(self.PIN, GPIO.OUTPUT)
-        wp.digitalWrite(self.PIN, GPIO.LOW)
+        wp.pinMode(self.pin, GPIO.OUTPUT)
+        wp.digitalWrite(self.pin, GPIO.LOW)
 
 
     def turn_off(self) -> None:
-        wp.digitalWrite(self.PIN, GPIO.LOW)
+        wp.digitalWrite(self.pin, GPIO.LOW)
         self.is_On = False
 
     
     def request_off(self) -> None:
-        if self.get_state() == True:
+        if self.get_state():
             self.turn_off()
 
 
     def turn_on(self) -> None:
-        wp.digitalWrite(self.PIN, GPIO.HIGH)
+        wp.digitalWrite(self.pin, GPIO.HIGH)
         self.is_On = True
 
             
     def request_on(self) -> None:
-        if self.get_state() == False:
+        if not self.get_state():
             self.turn_on()
 
 

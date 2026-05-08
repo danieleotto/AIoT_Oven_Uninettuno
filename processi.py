@@ -13,10 +13,8 @@ def print_title(title:str) -> None:
 
 
 def clear_values(params:dict) -> None:
-    try:
         for key,val in params.items():
             params[key] = None
-    except:
         input("Errore cancellando i dati...")
     
         
@@ -33,9 +31,9 @@ def load_presets(self, preset_file:str, menu:TextMenu) -> None:
             menu.add_option(item["id"], item["name"], partial(self.set_value_from_preset, item))
   
         
-def is_complete(obj):
+def is_complete(obj:dict) -> bool:
     #TODO types (considerare di fare una classe processi)
-    return all(v is not None for v in obj.params.values())
+    return all(v is not None for v in obj.values())
 
 
 def print_status(step:str, elapsed:float, temp:float, progress:float) -> None:
@@ -63,20 +61,12 @@ def check_temperature(elapsed:float, temp:float, target:float, step:str) -> None
         pass
     else:
         raise ErroreTemperatura(step, elapsed, temp, target)
-   
-   
-def check_tc(result):
-    #TODO result filetype
-    if result is None:
-        raise ErroreSonda
-    else:
-        return result
-    
+
     
 class Essicatura:
     """Gestisce il processo di essicatura."""
     def __init__(self, ctx:Context) -> None:
-        self.params = {
+        self.params:dict[str, float | None] = {
             "target_temp": None,
             "heat_time": None
         }
@@ -93,21 +83,21 @@ class Essicatura:
         self.preset_menu.add_option("C", "Crea preset ", todo_placeholder)
      
          
-    def _set_value(self, value, message) -> None:
+    def _set_value(self, key:str, message:str) -> None:
         try:
             v = float(input(message))
-            self.params[value] = v
-            if is_complete(self):
+            self.params[key] = v
+            if is_complete(self.params):
                 self.process_menu.enable_exec()
-        except:
+        except ValueError:
             print("Valore non valido.")
             input("Invio per continuare...")
     
     
-    def _set_value_from_preset(self, item):
-        self.params["target_temp"] = item["target_temp"]
-        self.params["heat_time"] = item["heat_time"]
-        if is_complete(self):
+    def _set_value_from_preset(self, value):
+        self.params["target_temp"] = value["target_temp"]
+        self.params["heat_time"] = value["heat_time"]
+        if is_complete(self.params):
             self.process_menu.enable_exec()
         print("Preset caricato...")
         time.sleep(0.5)
@@ -121,6 +111,7 @@ class Essicatura:
         t = self.params["target_temp"]
         ti = self.params["heat_time"]
         last_time:float = 0.0
+        start_time:float = 0.0
         
         self.ctx.sq.add_process(timestamp, self.process_name)
         try:
@@ -136,7 +127,7 @@ class Essicatura:
                 delta_time:float = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < t:
@@ -155,16 +146,15 @@ class Essicatura:
                     self.ctx.sq.add_sample("heating", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(),sys_temp)
                     
             dehydr_start_time = time.time()
-            elapsed_time = 0
             last_time = 0
-            last_temp = self.ctx.tc.read_temp_average()
+            last_temp = self.ctx.tc.read_temp_safe()
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase essicazione...{ANSI.RESET}\n\n\n")
             while not steps["dehydrating"]:
                 elapsed_time = time.time() - dehydr_start_time
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < t:
@@ -227,7 +217,7 @@ class Essicatura:
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
-        except ErroreSonda as e:
+        except ErroreSonda:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             clear_values(self.params)
@@ -239,7 +229,7 @@ class Essicatura:
 class Ricottura:
     """Gestisce il processo di ricottura."""
     def __init__(self, ctx:Context) -> None:
-        self.params = {
+        self.params:dict[str, float | None] = {
             "target_temp": None,
             "reheat_duration": None,
             "cooling_rate": None,
@@ -265,9 +255,9 @@ class Ricottura:
             self.params[value] = v
             if self.params["cooling_rate"] and self.params["target_temp"]:
                 self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
-            if is_complete(self):
+            if is_complete(self.params):
                 self.process_menu.enable_exec()
-        except:
+        except ValueError:
             print("Valore non valido.")
             print("Invio per continuare...")
     
@@ -278,7 +268,7 @@ class Ricottura:
         self.params["cooling_rate"] = item["cooling_rate"]
         if self.params["cooling_rate"] and self.params["target_temp"]:
             self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
-        if is_complete(self):
+        if is_complete(self.params):
             self.process_menu.enable_exec()
         print("Preset caricato...")
         time.sleep(0.5)
@@ -292,8 +282,8 @@ class Ricottura:
         sti = self.params["reheat_duration"]
         cr = self.params["cooling_rate"] #TODO
         cti = self.params["cooling_time_calc"]
-        elapsed_time = 0
-        last_time = 0
+        last_time:float = 0
+        start_time:float = 0
         
         self.ctx.sq.add_process(timestamp, self.process_name)
         try:
@@ -309,7 +299,7 @@ class Ricottura:
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < t:
@@ -328,16 +318,15 @@ class Ricottura:
                     self.ctx.sq.add_sample("heating", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
                 
             soak_start_time = time.time()
-            elapsed_time = 0
             last_time = 0
-            last_temp = self.ctx.tc.read_temp_average()
+            last_temp = self.ctx.tc.read_temp_safe()
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n{ANSI.RESET}")
             while not steps["soaking"]:
                 elapsed_time = time.time() - soak_start_time
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < t:
@@ -346,7 +335,7 @@ class Ricottura:
                         self.ctx.ssr_res.turn_off()
                     check_temperature(elapsed_time, temp, t, "Ricottura")
                     if elapsed_time < sti:
-                        progress = min(elapsed_time/sti, 1.0)
+                        progress = min(elapsed_time / sti, 1.0)
                         print_status("Ricottura", elapsed_time, temp, progress)
                     else:
                         print_status("Ricottura", elapsed_time, temp, 1.0)
@@ -358,16 +347,15 @@ class Ricottura:
                     self.ctx.sq.add_sample("soaking", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
                 
             cooling_start_time = time.time()
-            elapsed_time = 0
             last_time = 0
-            last_temp = self.ctx.tc.read_temp_average()
+            last_temp = self.ctx.tc.read_temp_safe()
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n{ANSI.RESET}")
             while not steps["cooling"]:
                 elapsed_time = time.time() - cooling_start_time
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO adddht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if elapsed_time < cti:
@@ -426,7 +414,7 @@ class Ricottura:
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
-        except ErroreSonda as e:
+        except ErroreSonda:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             clear_values(self.params)
@@ -482,9 +470,9 @@ class SaldaturaSMD:
             if self.params["reflow_temp"] and self.params["cooling_rate"]:
                 self.params["cooling_time_calc"] = round((self.params["reflow_temp"] - 20) / self.params["cooling_rate"])
 
-            if is_complete(self):
+            if is_complete(self.params):
                 self.process_menu.enable_exec()
-        except:
+        except ValueError:
             print("Valore non valido.")
             print("Invio per continuare...")
     
@@ -507,7 +495,7 @@ class SaldaturaSMD:
         if self.params["reflow_temp"] and self.params["cooling_rate"]:
             self.params["cooling_time_calc"] = round((self.params["reflow_temp"] - 20) / self.params["cooling_rate"])
 
-        if is_complete(self):
+        if is_complete(self.params):
             self.process_menu.enable_exec()
         print("Preset caricato...")
         time.sleep(0.5)
@@ -528,8 +516,8 @@ class SaldaturaSMD:
         rpti = self.params["reflow_peak_time"]
         cr = self.params["cooling_rate"]
         cti = self.params["cooling_time_calc"]
-        elapsed_time = 0
-        last_time = 0
+        last_time: float = 0
+        start_time: float = 0
         
         self.ctx.sq.add_process(timestamp, self.process_name)
         try:
@@ -545,7 +533,7 @@ class SaldaturaSMD:
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < pt:
@@ -564,16 +552,15 @@ class SaldaturaSMD:
                     self.ctx.sq.add_sample("preheating", pt, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
                     
             soak_start_time = time.time()
-            elapsed_time = 0
             last_time = 0
-            last_temp = self.ctx.tc.read_temp_average()
+            last_temp = self.ctx.tc.read_temp_safe()
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n{ANSI.RESET}")
             while not steps["soaking"]:
                 elapsed_time = time.time() - soak_start_time
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < st:
@@ -582,7 +569,7 @@ class SaldaturaSMD:
                         self.ctx.ssr_res.turn_off()
                     check_temperature(elapsed_time, temp, st, "Soaking")
                     if elapsed_time < sti:
-                        progress = elapsed_time/sti
+                        progress = elapsed_time / sti
                         print_status("Soaking", elapsed_time, temp, progress)
                     else:
                         print_status("Soaking", elapsed_time, temp, 1.0)
@@ -594,9 +581,8 @@ class SaldaturaSMD:
                     self.ctx.sq.add_sample("soaking", st, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
             
             reflow_start_time = time.time()
-            elapsed_time = 0
             last_time = 0
-            last_temp = self.ctx.tc.read_temp_average()
+            last_temp = self.ctx.tc.read_temp_safe()
             MAX_TIME:float = (rt - last_temp) / 0.5
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase reflow...\n\n\n{ANSI.RESET}")
             while not steps["reflowheat"]:
@@ -604,7 +590,7 @@ class SaldaturaSMD:
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < rt:
@@ -623,16 +609,15 @@ class SaldaturaSMD:
                     self.ctx.sq.add_sample("reflow_heat", rt, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(),sys_temp)                   
             
             reflow_peak_start_time = time.time()
-            elapsed_time = 0
             last_time = 0
-            last_temp = self.ctx.tc.read_temp_average()
+            last_temp = self.ctx.tc.read_temp_safe()
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase picco reflow...{ANSI.RESET}\n\n\n")
             while not steps["reflow"]:
                 elapsed_time = time.time() - reflow_peak_start_time
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < rpt:
@@ -653,17 +638,17 @@ class SaldaturaSMD:
                     self.ctx.sq.add_sample("reflow", rpt, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
             
             cooling_start_time = time.time()
-            elapsed_time = last_time = 0
-            last_temp = self.ctx.tc.read_temp_average()
+            last_time = 0
+            last_temp = self.ctx.tc.read_temp_safe()
             print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n{ANSI.RESET}")
             while not steps["cooling"]:
                 elapsed_time = time.time() - cooling_start_time
                 delta_time = elapsed_time - last_time
                 if delta_time > self.ctx.sampling_interval:
                     sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_average()
+                    temp = self.ctx.tc.read_temp_safe()
                     delta_temp = temp - last_temp
-                    tempRate = delta_temp / delta_time
+                    temp_rate = delta_temp / delta_time
                     if elapsed_time < cti:
                         #TODO controllo raffreddamento come ricottura
                         progress = min(elapsed_time / cti, 1.0)
@@ -720,7 +705,7 @@ class SaldaturaSMD:
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
-        except ErroreSonda as e:
+        except ErroreSonda:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             clear_values(self.params)

@@ -79,7 +79,7 @@ class SQLiteDB:
         return self.cursor.fetchall()
 
 
-    def get_last_id(self, tablename:str):
+    def get_last_id(self, tablename:str) -> str | None:
         #TODO return type
         query = f"SELECT * FROM {tablename} ORDER BY 1 DESC LIMIT 1"
         self.cursor.execute(query)
@@ -89,19 +89,22 @@ class SQLiteDB:
     
     def log_samples(self) -> None:
         last_id = self.get_last_id("listaprocessi")
-        query = f"SELECT timestamp FROM listaprocessi WHERE idProc = {last_id}"
-        self.cursor.execute(query)
-        timestamp = self.cursor.fetchone()[0]
-        LOG_FILE = str(timestamp) + f"_{last_id}_ProcessLog.csv"
-        LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
-        sample_list = self.read_samples_by_id(last_id)
-        
-        with open(LOG_FILENAME, "a", encoding="utf-8") as file:
-            if file.tell() == 0:
-                file.write("id, idProc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp\n")
-            for sample in sample_list:
-                text_line = ",".join(str(value) for value in sample)
-                file.write(text_line + "\n")
+        if last_id is not None:
+            query = f"SELECT timestamp FROM listaprocessi WHERE idProc = {last_id}"
+            self.cursor.execute(query)
+            timestamp = self.cursor.fetchone()[0]
+            LOG_FILE = str(timestamp) + f"_{last_id}_ProcessLog.csv"
+            LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
+            sample_list = self.read_samples_by_id(last_id)
+
+            with open(LOG_FILENAME, "a", encoding="utf-8") as file:
+                if file.tell() == 0:
+                    file.write("id, idProc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp\n")
+                for sample in sample_list:
+                    text_line = ",".join(str(value) for value in sample)
+                    file.write(text_line + "\n")
+        else:
+            print("Valori non registrati, non esiste ID processo.")
     
     
     def log_processes(self) -> None:

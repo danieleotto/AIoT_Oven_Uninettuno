@@ -30,16 +30,16 @@ else:
     INTERRUPT_KEY = "\x13"
     
 
-def tc_test(sampling:float) -> str:
+def tc_test(sampling_time:float) -> str:
     try:
         print("Test Termocoppia.\nCTRL+C per terminare.")
-        if tc._inizializza(sampling, debug=True) is not None:
+        if tc.controllo_sonda(sampling_time, debug=True) is not None:
             print("\n")
             while True:
-                t = tc._read_tc()
+                t = tc.read_raw_temp()
                 temp = tc.read_temp_average()
                 print(f"Buffer: {tc.buffer}  |  LastTemp: {t:.1f}  | LastAVG: {temp:.1f}")
-                time.sleep(sampling)
+                time.sleep(sampling_time)
         else:
             input("Sonda non rilevata, programma terminato.\nPremere un tasto per continuare...")
             return "MAIN_MENU"
@@ -51,6 +51,7 @@ def tc_test(sampling:float) -> str:
 def ssr_test(ssr: SolidStateRelay, nome: str) -> str:
     print(f"Test SSR {nome}, acceso 10 secondi, spento 10 secondi.\nCTRL+C per terminare.")
     last_time:float = time.time()
+    remaining:float = 0.0
     ssr.turn_off()
     try:
         while True:
@@ -70,46 +71,46 @@ def ssr_test(ssr: SolidStateRelay, nome: str) -> str:
         return "MAIN_MENU"
 
 
-def dht22_test(dht:TempSensor, sampling:float) -> str:
+def dht22_test(dht:TempSensor, sampling_time:float) -> str:
     print("Test sensore DHT22.\nCTRL+C per terminare.")
     try:
         while True:
             temp = dht.get_temperature()
             hum = dht.get_humidity()
             print(f"Lettura DHT22: Temperatura {temp:.1f}°C | Umidità {hum:.1f}.")
-            time.sleep(sampling)
+            time.sleep(sampling_time)
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare...")
         return "MAIN_MENU"
 
 
-def pzem_test(sensor, sampling:float) -> str:
+def pzem_test(sensor, sampling_time:float) -> str:
     #TODO change sensor type
     print("Test sensore PZEM004T.\nCTRL+C per terminare.")
     try:
         while True:
             (voltage, current, power, reg_power) = sensor.readAll()
             print(f"Voltage: {voltage}, Current: {current}, Power: {power}, RegPower: {reg_power}")
-            time.sleep(sampling)
+            time.sleep(sampling_time)
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare...")
         return "MAIN MENU"
 
 
-def pzem2_test(sensor, sampling:float) -> str:
+def pzem2_test(sensor, sampling_time:float) -> str:
     #TODO change sensor type
     print("Test sensore PZEM004T Modbus.\nCTRL+C per terminare.")
     try:
         while True:
             readings = sensor.readAll()
             print(f"V: {readings['voltage']}V, I: {readings['current']}A, P: {readings['power']}W, E: {readings['energy']}J, F: {readings['frequency']}Hz, PF: {readings['powerfactor']}?, Alarm: {readings['alarm']}")
-            time.sleep(sampling)
+            time.sleep(sampling_time)
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare...")
         return "MAIN MENU"
 
 
-def cycle_test(sampling:float, ssr_res:SolidStateRelay) -> str:
+def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
     print("=== TEST SONDA ===")
     print("S → interrompe il ciclo e chiede nuova temperatura")
     print("CTRL+C → termina il test\n")    
@@ -127,8 +128,8 @@ def cycle_test(sampling:float, ssr_res:SolidStateRelay) -> str:
 
             # --- CICLO DI RISCALDAMENTO ---
             temp = tc.read_temp_average()
-            while temp < target:
-                ssr_res.turn_on()
+            while temp is not None and temp < target:
+                ssr.turn_on()
                 temp = tc.read_temp_average()
                 if temp is None:
                     temp = float(0)
@@ -141,11 +142,11 @@ def cycle_test(sampling:float, ssr_res:SolidStateRelay) -> str:
                     print("\nInterruzione ciclo (S).")
                     break
 
-                time.sleep(sampling)
+                time.sleep(sampling_time)
             # se CTRL+S → torna a chiedere nuova temperatura
             if stop_cycle:
                 continue
-            ssr_res.turn_off()
+            ssr.turn_off()
             print("\nTarget raggiunto. Inizio mantenimento...\n")
             
             # --- CICLO DI MANTENIMENTO ---
@@ -158,9 +159,9 @@ def cycle_test(sampling:float, ssr_res:SolidStateRelay) -> str:
 
                 # controllo temperatura
                 if temp >= target - 1:
-                    ssr_res.turn_off()
+                    ssr.turn_off()
                 elif target - 5 < temp < target -1:
-                    ssr_res.turn_on()
+                    ssr.turn_on()
                 elif temp <= target - 5:
                     print("\nTemperatura scesa troppo. Fine mantenimento.")
                     break
@@ -178,24 +179,28 @@ def cycle_test(sampling:float, ssr_res:SolidStateRelay) -> str:
             if stop_cycle:
                 continue
             
-            ssr_res.turn_off()
+            ssr.turn_off()
             print("\nCiclo completato.\n")
+            return "MAIN_MENU"
 
         except KeyboardInterrupt:
-            ssr_res.turn_off()
+            ssr.turn_off()
             print("\n\nTest interrotto manualmente (CTRL+C).")
             print("Uscita dal test sonda.")
             return "MAIN_MENU"
 
+        finally:
+            return "MAIN_MENU"
 
-def ssr_state(is_on:bool, ssr_res:SolidStateRelay ,ssr_fan:SolidStateRelay) -> str:
+
+def ssr_state(is_on:bool, ssr_r:SolidStateRelay ,ssr_f:SolidStateRelay) -> str:
     if is_on:
-        ssr_res.turn_on()
-        ssr_fan.turn_on()
+        ssr_r.turn_on()
+        ssr_f.turn_on()
     else:
-        ssr_res.turn_off()
-        ssr_fan.turn_off()
-    print(f"SSR Res: {ssr_res.get_state()} | SSR Fan: {ssr_fan.get_state()}")
+        ssr_r.turn_off()
+        ssr_f.turn_off()
+    print(f"SSR Res: {ssr_r.get_state()} | SSR Fan: {ssr_f.get_state()}")
     input("Premere un tasto per continuare...")
     return "MAIN_MENU"
 
