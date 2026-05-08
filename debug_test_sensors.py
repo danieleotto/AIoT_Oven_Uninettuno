@@ -3,7 +3,7 @@ from ss_relay import SolidStateRelay
 from console_menu import TextMenu, ANSI
 from functools import partial
 from temp_sensor import TempSensor
-from customlib.classes import ErroreSonda
+from customlib.custom_exceptions import ErroreSonda
 #from customlib.PZEM004Tlib import PZEM004T
 #from customlib.PZEM004TModbuslib import PZEM004TModbus
 import json, time, sys, os

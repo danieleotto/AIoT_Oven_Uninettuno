@@ -2,8 +2,9 @@ import os, time, json, sys
 from console_menu import TextMenu, ANSI
 from functools import partial
 from customlib.functions import todo_placeholder, get_timestamp, time_convert_str, clear_console
-from customlib.classes import ErroreTimeout, ErroreTemperatura, ErroreSonda
-from main import Context
+from customlib.custom_exceptions import ErroreTimeout, ErroreTemperatura, ErroreSonda
+from customlib.custom_classes import Context
+
 
 
 def print_title(title:str) -> None:
@@ -26,9 +27,9 @@ def load_presets(self, preset_file:str, menu:TextMenu) -> None:
         presets = json.load(fn)            
     for item in presets["values"]:
         if item is presets["values"][-1]:
-            menu.add_option(item["id"], item["name"]+"\n", partial(self.set_value_from_preset, item))
+            menu.add_option(item["id"], item["name"]+"\n", partial(self._set_value_from_preset, item))
         else:
-            menu.add_option(item["id"], item["name"], partial(self.set_value_from_preset, item))
+            menu.add_option(item["id"], item["name"], partial(self._set_value_from_preset, item))
   
         
 def is_complete(obj:dict) -> bool:
@@ -262,7 +263,7 @@ class Ricottura:
             print("Invio per continuare...")
     
     
-    def set_value_from_preset(self, item):
+    def _set_value_from_preset(self, item):
         self.params["target_temp"] = item["target_temp"]
         self.params["reheat_duration"] = item["reheat_duration"]
         self.params["cooling_rate"] = item["cooling_rate"]
@@ -477,7 +478,7 @@ class SaldaturaSMD:
             print("Invio per continuare...")
     
     
-    def set_value_from_preset(self, item):
+    def _set_value_from_preset(self, item):
         self.params["ph_temp"] = item["ph_temp"]
         self.params["ph_rate"] = item["ph_rate"]
         self.params["soak_time"] = item["soak_time"]

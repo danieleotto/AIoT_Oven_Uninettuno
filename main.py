@@ -5,33 +5,41 @@ from ss_relay import SolidStateRelay
 from console_menu import TextMenu, ANSI
 from processi import Essicatura, Ricottura, SaldaturaSMD
 from temp_sensor import TempSensor
+from customlib.custom_classes import Context
 #from dht22 import DHT22
 #from PZEM004Tlib import PZEM004T
 #from PZEM004TModbuslib import PZEM004TModbus #alternativa da controllare
 
-class Context:
-    def __init__(
-        self, 
-        thermocouple:Termocoppia,
-        si:float,
-        database:SQLiteDB,
-        ssr_resistance:SolidStateRelay,
-        ssr_ovenfan:SolidStateRelay,
-        dht22:TempSensor = None,
-        pzem = None
-    ) -> None:
-        #TODO pzem sensor type
-        self.tc = thermocouple
-        self.sampling_interval = si
-        self.sq = database
-        self.ssr_res = ssr_resistance
-        self.ssr_fan = ssr_ovenfan
-        self.dht22 = dht22
-        self.pzem = pzem
+CONFIG_FILE:str = 'config.json'
+DEFAULT_CONFIG = {
+  "avg_sample_size" : 10,
+  "TC_PIN_SCK": 8,
+  "TC_PIN_CS": 7,
+  "TC_PIN_DO": 5,
+  "RES_SSR_PIN": 2,
+  "FAN_SSR_PIN": 3,
+  "DHT22_PIN": 4,
+  "PZEM_port": "/dev/ttyUSB0",
+  "PZEM_timeout": 10,
+  "db_filename": "ovenDB.db",
+  "sample_interval": 0.2
+}
+config_loaded:bool = False
 
-with open("config.json") as config_file:
-    config_data = json.load(config_file)
-
+while not config_loaded:
+    try:
+        with open(CONFIG_FILE, "r") as f:
+            config_data = json.load(f)
+            config_loaded = True
+    except FileNotFoundError:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+        continue
+    except json.JSONDecodeError:
+        with open(CONFIG_FILE, "w") as f:
+            json.dump(DEFAULT_CONFIG, f, indent=4)
+        continue
+        
 TC_SCK_PIN:int = config_data["TC_PIN_SCK"]
 TC_CS_PIN:int = config_data["TC_PIN_CS"]
 TC_DO_PIN:int = config_data["TC_PIN_DO"]
