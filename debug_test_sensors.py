@@ -131,10 +131,10 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
             stop_cycle:bool = False
 
             # --- CICLO DI RISCALDAMENTO ---
-            temp = tc.read_temp_average()
-            while temp is not None and temp < target:
+            temp = tc.read_temp_safe()
+            while temp < target:
                 ssr.turn_on()
-                temp = tc.read_temp_average()
+                temp = tc.read_temp_safe()
                 if temp is None:
                     temp = float(0)
                 print(f"\rTemp attuale: {temp:.1f}°C   Target: {target:.1f}°C", end="")
@@ -185,13 +185,14 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
             
             ssr.turn_off()
             print("\nCiclo completato.\n")
-            return "MAIN_MENU"
+            break
 
         except KeyboardInterrupt:
             ssr.turn_off()
             print("\n\nTest interrotto manualmente (CTRL+C).")
             print("Uscita dal test sonda.")
-            return "MAIN_MENU"
+            break
+    return "MAIN MENU"
 
 
 def ssr_state(is_on:bool, ssr_r:SolidStateRelay ,ssr_f:SolidStateRelay) -> str:
