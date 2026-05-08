@@ -38,7 +38,7 @@ def tc_test(sampling:float) -> str:
             while True:
                 t = tc._read_tc()
                 temp = tc.read_temp_average()
-                print(f"Buffer: {tc.buffer}  |  LastTemp: {t}  | LastAVG: {temp}")
+                print(f"Buffer: {tc.buffer}  |  LastTemp: {t:.1f}  | LastAVG: {temp:.1f}")
                 time.sleep(sampling)
         else:
             input("Sonda non rilevata, programma terminato.\nPremere un tasto per continuare...")
@@ -188,7 +188,18 @@ def temp_test(sampling:float) -> None:
         except KeyboardInterrupt:
             print("\n\nTest interrotto manualmente (CTRL+C).")
             print("Uscita dal test sonda.")
-            break    
+            break
+
+def ssr_state(is_on:bool, ssr_res:SolidStateRelay ,ssr_fan:SolidStateRelay):
+    if is_on:
+        ssr_res.HIGH()
+        ssr_fan.HIGH()
+    else:
+        ssr_res.LOW()
+        ssr_fan.LOW()
+    print(f"SSR Res: {ssr_res.get_state()} | SSR Fan: {ssr_fan.get_state()}")
+    input("Premere un tasto per continuare...")
+
         
 with open("config.json") as config_file:
     config_data = json.load(config_file)
@@ -217,7 +228,11 @@ m.add_option("3","SSR Ventola", partial(ssr_test, ssr_fan, "Ventola"))
 m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))
 #m.add_option("5","Sensore PZEM004T", partial(pzem_test, pzem, sampling))
 #m.add_option("6","Sensore PZEM004T Modbus", partial(pzem2_test, pzem2, sampling))
-m.add_option("7","Test temperatura", partial(temp_test, sampling))
+m.add_option("7","Test sys temp", partial(temp_test, sampling))
+m.add_option("8","Forza SSR on", partial(ssr_state, True, ssr_res, ssr_fan))
+m.add_option("9","Forza SSR off", partial(ssr_state, False, ssr_res, ssr_fan))
 
 if __name__ == '__main__':
     m.run()
+    ssr_res.LOW()
+    ssr_fan.LOW()
