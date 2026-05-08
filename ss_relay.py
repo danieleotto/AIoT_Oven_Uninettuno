@@ -11,14 +11,24 @@ class SolidStateRelay:
         wp.digitalWrite(self.PIN, GPIO.LOW)
 
 
-    def LOW(self) -> None:
+    def turn_off(self) -> None:
         wp.digitalWrite(self.PIN, GPIO.LOW)
         self.is_On = False
 
+    
+    def request_off(self) -> None:
+        if self.get_state() == True:
+            self.turn_off()
 
-    def HIGH(self) -> None:
+
+    def turn_on(self) -> None:
         wp.digitalWrite(self.PIN, GPIO.HIGH)
         self.is_On = True
+
+            
+    def request_on(self) -> None:
+        if self.get_state() == False:
+            self.turn_on()
 
 
     def get_state(self) -> bool:
@@ -30,6 +40,6 @@ class SolidStateRelay:
     
     def toggle_state(self) -> None:
         if self.get_state():
-            self.LOW()
+            self.turn_off()
         else:
-            self.HIGH()
+            self.turn_on()

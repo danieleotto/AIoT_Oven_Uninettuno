@@ -141,12 +141,12 @@ class Essicatura:
                     temp_rate = delta_temp / delta_time
                     if temp < t:
                         check_timeout(elapsed_time, MAX_TIME, "Riscaldamento")
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                         progress = min(temp / t, 1.0)
                         print_status("Riscaldamento", elapsed_time, temp, progress)
                         #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print_status("Riscaldamento", elapsed_time, temp, 1.0)
                         print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["heating"] = True
@@ -168,16 +168,16 @@ class Essicatura:
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < t:
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                     check_temperature(elapsed_time, temp, t, "Essicatura")
                     if elapsed_time < ti:
                         progress = min(elapsed_time / ti, 1.0)
                         print_status(self.process_name, elapsed_time, temp, progress)
                     else:
                         print_status(self.process_name, elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
                         steps["dehydrating"] = True
                     last_time = elapsed_time
@@ -185,8 +185,8 @@ class Essicatura:
                     self.ctx.sq.add_sample("dehydrating", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
             
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "OK")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -195,8 +195,8 @@ class Essicatura:
                 
         except KeyboardInterrupt:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "USER_STOP")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -205,8 +205,8 @@ class Essicatura:
 
         except ErroreTimeout as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -217,8 +217,8 @@ class Essicatura:
 
         except ErroreTemperatura as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -228,8 +228,8 @@ class Essicatura:
             return "MAIN_MENU"
         
         except ErroreSonda as e:
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
             input("Premere un tasto per continuare...")
@@ -314,12 +314,12 @@ class Ricottura:
                     temp_rate = delta_temp / delta_time
                     if temp < t:
                         check_timeout(elapsed_time, MAX_TIME, "Riscaldamento")
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                         progress = min(temp / t, 1.0)
                         print_status("Riscaldamento", elapsed_time, temp, progress)
                         #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print_status("Riscaldamento", elapsed_time, temp, 1.0)
                         print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["heating"] = True
@@ -341,16 +341,16 @@ class Ricottura:
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < t:
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                     check_temperature(elapsed_time, temp, t, "Ricottura")
                     if elapsed_time < sti:
                         progress = min(elapsed_time/sti, 1.0)
                         print_status("Ricottura", elapsed_time, temp, progress)
                     else:
                         print_status("Ricottura", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print(f"Ricottura completata in {time_convert_str(elapsed_time)}.\n\n")
                         steps["soaking"] = True
                     last_time = elapsed_time
@@ -376,7 +376,7 @@ class Ricottura:
                         print_status("Raffreddamento", elapsed_time, temp, progress)
                     else:
                         print_status("Raffreddamento", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["cooling"] = True
                     last_time = elapsed_time
@@ -384,8 +384,8 @@ class Ricottura:
                     self.ctx.sq.add_sample("cooling", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
                     
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "OK")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -394,8 +394,8 @@ class Ricottura:
         
         except KeyboardInterrupt:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "USER_STOP")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -404,8 +404,8 @@ class Ricottura:
 
         except ErroreTimeout as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -416,8 +416,8 @@ class Ricottura:
 
         except ErroreTemperatura as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -427,8 +427,8 @@ class Ricottura:
             return "MAIN_MENU"
         
         except ErroreSonda as e:
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             clear_values(self.params)
             return "MAIN_MENU"
 
@@ -550,12 +550,12 @@ class SaldaturaSMD:
                     temp_rate = delta_temp / delta_time
                     if temp < pt:
                         check_timeout(elapsed_time, MAX_TIME, "Pre-Heating")
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                         progress = min(temp / pt, 1.0)
                         print_status("Pre-Heating", elapsed_time, temp, progress)
                         #TODO aggiungere il sfatyoff se maxtime superato
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print_status("Pre-Heating", elapsed_time, temp, 1.0)
                         print(f"Pre-Heating completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["preheating"] = True
@@ -577,16 +577,16 @@ class SaldaturaSMD:
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < st:
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                     check_temperature(elapsed_time, temp, st, "Soaking")
                     if elapsed_time < sti:
                         progress = elapsed_time/sti
                         print_status("Soaking", elapsed_time, temp, progress)
                     else:
                         print_status("Soaking", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print(f"Soaking completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["soaking"] = True
                     last_time = elapsed_time
@@ -609,12 +609,12 @@ class SaldaturaSMD:
                     temp_rate = delta_temp / delta_time
                     if temp < rt:
                         check_timeout(elapsed_time, MAX_TIME, "Reflow Heating")
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                         progress = min(temp / rt, 1.0)
                         print_status("Reflow Heating", elapsed_time, temp, progress)
                         #TODO safetyoff
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print_status("Reflow Heating", elapsed_time, temp, 1.0)
                         print(f"Reflow Heating completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["reflowheat"] = True
@@ -636,16 +636,16 @@ class SaldaturaSMD:
                     delta_temp = temp - last_temp
                     temp_rate = delta_temp / delta_time
                     if temp < rpt:
-                        self.ctx.ssr_res.HIGH()
+                        self.ctx.ssr_res.turn_on()
                     else:
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                     check_temperature(elapsed_time, temp, rpt, "Reflow Peak")
                     if elapsed_time < rpti:
                         progress = min(elapsed_time / rpti, 1.0)
                         print_status("Reflow Peak", elapsed_time, temp, progress)
                     else:
                         print_status("Reflow Peak", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print(f"Reflow Peak completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["reflow"] = True
                     last_time = elapsed_time
@@ -670,7 +670,7 @@ class SaldaturaSMD:
                         print_status("Raffreddamento", elapsed_time, temp, progress)
                     else:
                         print_status("Rafreddamento", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.LOW()
+                        self.ctx.ssr_res.turn_off()
                         print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
                         steps["cooling"] = True
                     last_time = elapsed_time
@@ -678,8 +678,8 @@ class SaldaturaSMD:
                     self.ctx.sq.add_sample("cooling", cti, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
                     
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "OK")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -688,8 +688,8 @@ class SaldaturaSMD:
         
         except KeyboardInterrupt:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "USER_STOP")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -698,8 +698,8 @@ class SaldaturaSMD:
         
         except ErroreTimeout as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -710,8 +710,8 @@ class SaldaturaSMD:
 
         except ErroreTemperatura as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             self.ctx.sq.log_samples()
             clear_values(self.params)
@@ -721,7 +721,7 @@ class SaldaturaSMD:
             return "MAIN_MENU"
         
         except ErroreSonda as e:
-            self.ctx.ssr_res.LOW()
-            self.ctx.ssr_fan.LOW()
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
             clear_values(self.params)
             return "MAIN_MENU"

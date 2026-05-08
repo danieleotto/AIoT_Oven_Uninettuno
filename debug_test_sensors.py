@@ -51,7 +51,7 @@ def tc_test(sampling:float) -> str:
 def ssr_test(ssr: SolidStateRelay, nome: str) -> str:
     print(f"Test SSR {nome}, acceso 10 secondi, spento 10 secondi.\nCTRL+C per terminare.")
     last_time:float = time.time()
-    ssr.LOW()
+    ssr.turn_off()
     try:
         while True:
             elapsed_time = time.time()
@@ -65,7 +65,7 @@ def ssr_test(ssr: SolidStateRelay, nome: str) -> str:
             sys.stdout.write("\033[F\033[K")
         
     except KeyboardInterrupt:
-        ssr.LOW()
+        ssr.turn_off()
         input("\nTerminato. Premere un tasto per continuare...")
         return "MAIN_MENU"
 
@@ -109,9 +109,9 @@ def pzem2_test(sensor, sampling:float) -> str:
         return "MAIN MENU"
 
 
-def temp_test(sampling:float) -> None:
+def cycle_test(sampling:float, ssr_res:SolidStateRelay) -> str:
     print("=== TEST SONDA ===")
-    print("CTRL+S → interrompe il ciclo e chiede nuova temperatura")
+    print("S → interrompe il ciclo e chiede nuova temperatura")
     print("CTRL+C → termina il test\n")    
     while True:
         try:
@@ -122,51 +122,46 @@ def temp_test(sampling:float) -> None:
                 continue
             
             print(f"\nAvvio ciclo per {target}°C...")
-            print("Premi CTRL+S per interrompere il ciclo corrente.\n")
-            
+            print("Premi S per interrompere il ciclo corrente.\n")
             stop_cycle:bool = False
 
             # --- CICLO DI RISCALDAMENTO ---
-            counter:int = 0
-            while True:
-                # lettura temperatura
-                counter +=1
+            temp = tc.read_temp_average()
+            while temp < target:
+                ssr_res.turn_on()
                 temp = tc.read_temp_average()
                 if temp is None:
                     temp = float(0)
-
-                # stampa stato
-                print(f"\rTemp attuale: {temp}°C   Target: {target}°C | Counter: {counter}", end="")
-
-                # controllo raggiungimento
-                if temp >= target:
-                    print("\nTarget raggiunto. Inizio mantenimento...")
-                    break
+                print(f"\rTemp attuale: {temp:.1f}°C   Target: {target:.1f}°C", end="")
 
                 # controllo CTRL+S
                 key = get_key()
                 if key == INTERRUPT_KEY:  # CTRL+S
                     stop_cycle = True
-                    print("\nInterruzione ciclo (CTRL+S).")
+                    print("\nInterruzione ciclo (S).")
                     break
 
                 time.sleep(sampling)
-
             # se CTRL+S → torna a chiedere nuova temperatura
             if stop_cycle:
                 continue
-
+            ssr_res.turn_off()
+            print("\nTarget raggiunto. Inizio mantenimento...\n")
+            
             # --- CICLO DI MANTENIMENTO ---
-            print("Mantenimento in corso... (CTRL+S per interrompere)")
-
+            print("Mantenimento in corso... (S per interrompere)")
             while True:
                 temp = tc.read_temp_average()
                 if temp is None:
                     temp = float(0)
-                print(f"\rTemp attuale: {temp}°C   (mantenimento)", end="")
+                print(f"\rTemp attuale: {temp:.1f}°C   (mantenimento)", end="")
 
-                # esempio: mantieni ±3°C
-                if temp < target - 3:
+                # controllo temperatura
+                if temp >= target - 1:
+                    ssr_res.turn_off()
+                elif target - 5 < temp < target -1:
+                    ssr_res.turn_on()
+                elif temp <= target - 5:
                     print("\nTemperatura scesa troppo. Fine mantenimento.")
                     break
 
@@ -174,7 +169,7 @@ def temp_test(sampling:float) -> None:
                 key = get_key()
                 if key == INTERRUPT_KEY:  # CTRL+S
                     stop_cycle = True
-                    print("\nInterruzione ciclo (CTRL+S).")
+                    print("\nInterruzione ciclo (S).")
                     break
 
                 time.sleep(sampling)
@@ -182,24 +177,30 @@ def temp_test(sampling:float) -> None:
             # se CTRL+S → torna a chiedere nuova temperatura
             if stop_cycle:
                 continue
-
+            
+            ssr_res.turn_off()
             print("\nCiclo completato.\n")
 
         except KeyboardInterrupt:
+            ssr_res.turn_off()
             print("\n\nTest interrotto manualmente (CTRL+C).")
             print("Uscita dal test sonda.")
-            break
+            return "MAIN_MENU"
 
-def ssr_state(is_on:bool, ssr_res:SolidStateRelay ,ssr_fan:SolidStateRelay):
+
+def ssr_state(is_on:bool, ssr_res:SolidStateRelay ,ssr_fan:SolidStateRelay) -> str:
     if is_on:
-        ssr_res.HIGH()
-        ssr_fan.HIGH()
+        ssr_res.turn_on()
+        ssr_fan.turn_on()
     else:
-        ssr_res.LOW()
-        ssr_fan.LOW()
+        ssr_res.turn_off()
+        ssr_fan.turn_off()
     print(f"SSR Res: {ssr_res.get_state()} | SSR Fan: {ssr_fan.get_state()}")
     input("Premere un tasto per continuare...")
+    return "MAIN_MENU"
 
+       
+       
         
 with open("config.json") as config_file:
     config_data = json.load(config_file)
@@ -212,7 +213,7 @@ FAN_SSR_PIN = config_data["FAN_SSR_PIN"]
 DHT22_PIN = config_data["DHT22_PIN"]
 interval = config_data["sample_interval"]
 sample_size = config_data["avg_sample_size"]
-sampling = 0.3
+sampling = config_data["sample_interval"]
 
 tc = Termocoppia(TC_SCK,TC_CS,TC_DO, sample_size)
 dht22 = TempSensor(DHT22_PIN)
@@ -228,11 +229,11 @@ m.add_option("3","SSR Ventola", partial(ssr_test, ssr_fan, "Ventola"))
 m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))
 #m.add_option("5","Sensore PZEM004T", partial(pzem_test, pzem, sampling))
 #m.add_option("6","Sensore PZEM004T Modbus", partial(pzem2_test, pzem2, sampling))
-m.add_option("7","Test sys temp", partial(temp_test, sampling))
-m.add_option("8","Forza SSR on", partial(ssr_state, True, ssr_res, ssr_fan))
-m.add_option("9","Forza SSR off", partial(ssr_state, False, ssr_res, ssr_fan))
+m.add_option("7","Test Ciclo Riscaldamento", partial(cycle_test, sampling, ssr_res))
+m.add_option("8","Forza tutti SSR on", partial(ssr_state, True, ssr_res, ssr_fan))
+m.add_option("9","Forza tutti SSR off", partial(ssr_state, False, ssr_res, ssr_fan))
 
 if __name__ == '__main__':
     m.run()
-    ssr_res.LOW()
-    ssr_fan.LOW()
+    ssr_res.turn_off()
+    ssr_fan.turn_off()
