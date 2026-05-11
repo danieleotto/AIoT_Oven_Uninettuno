@@ -3,9 +3,9 @@
     {
         "id": "1",
         "name": "Nylon - PA16",
-        "target_temp": 110,
-        "reheat_duration": 100,
-        "cooling_rate": 3
+        "ris_target_temp": 110.0,
+        "ric_target_time": 100.0,
+        "cool_target_temp_rate": 3.0
     }
   ] 
 }

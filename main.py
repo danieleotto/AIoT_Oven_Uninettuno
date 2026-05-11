@@ -64,7 +64,7 @@ r_proc:Ricottura = Ricottura(ctx)
 s_proc:SaldaturaSMD = SaldaturaSMD(ctx)
 
 menu_principale:TextMenu = TextMenu("             --- MENU PRINCIPALE ---", color_title=ANSI.GREEN, color_option=ANSI.CYAN)
-menu_principale.add_option("1", "Essicartura", e_proc.process_menu)
+menu_principale.add_option("1", "Essicatura", e_proc.process_menu)
 menu_principale.add_option("2", "Ricottura", r_proc.process_menu)
 menu_principale.add_option("3", "Saldatura SMD", s_proc.process_menu)
 

@@ -129,5 +129,11 @@ class TextMenu:
         for key,opt in self.options.items():
             if opt["exec"]:
                 opt["disabled"] = False
-                
+    
+    
+    def disable_exec(self) -> None:
+        for key,opt in self.options.items():
+            if opt["exec"]:
+                opt["disabled"] = True
+
             
