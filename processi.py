@@ -42,7 +42,6 @@ def print_title(title:str) -> None:
     print("="*50)
 
 
-
     
 class Essicatura:
     """Gestisce il processo di essicatura."""
@@ -61,7 +60,7 @@ class Essicatura:
                                      lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
                                      partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
         self.process_menu.add_option("2", 
-                                     lambda: f"Imposta Durata      : {time_convert_str(self.params['ess_target_time']) or '- [s]'}", 
+                                     lambda: f"Imposta Durata      : {time_convert_str(self.params['ess_target_time'], ms=False) or '- [s]'}", 
                                      partial(self._set_value,"ess_target_time","Durata essicatura [s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
@@ -142,7 +141,7 @@ class Essicatura:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             self.ctx.sq.log_samples()
-
+            clear_values(self.params, self.process_menu)
 
 
 
@@ -164,7 +163,7 @@ class Ricottura:
                                      lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
                                      partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
         self.process_menu.add_option("2", 
-                                     lambda: f"Imposta Heat Time   : {time_convert_str(self.params['ric_target_time']) or '- [s]'}", 
+                                     lambda: f"Imposta Heat Time   : {time_convert_str(self.params['ric_target_time'], ms = False) or '- [s]'}", 
                                      partial(self._set_value, "ric_target_time", "Durata ricottura [s]: "))
         self.process_menu.add_option("3", 
                                      lambda: f"Imposta Cooling Rate: {self.params['cool_target_temp_rate'] or '-'} [°C/s]\n    Cooling time        : {time_convert_str(self.params['cool_target_time_calc']) or '- [s]'}", 
@@ -257,7 +256,7 @@ class Ricottura:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             self.ctx.sq.log_samples()
-
+            clear_values(self.params, self.process_menu)
 
 
 
@@ -289,7 +288,7 @@ class SaldaturaSMD:
                                      lambda: f"Imposta Pre-Heat rate   : {self.params['ph_rate'] or '-'} [°C/s]\n    Pre-Heat time           : {time_convert_str(self.params['ph_time_calc']) or '- [s]'}", 
                                      partial(self._set_value,"ph_rate","Target rate [°C/s]: "))
         self.process_menu.add_option("3", 
-                                     lambda: f"Imposta Soak time       : {time_convert_str(self.params['soak_time']) or '- [s]'}", 
+                                     lambda: f"Imposta Soak time       : {time_convert_str(self.params['soak_time'], ms = False) or '- [s]'}", 
                                      partial(self._set_value,"soak_time","Tempo soak [s]: "))
         self.process_menu.add_option("4", 
                                      lambda: f"Imposta Reflow temp     : {self.params['reflow_temp'] or '-'} [°C]", 
@@ -298,7 +297,7 @@ class SaldaturaSMD:
                                      lambda: f"Imposta Reflow rate     : {self.params['reflow_rate'] or '-'} [°C/s]\n    Reflow time             : {time_convert_str(self.params['reflow_time_calc']) or '- [s]'}", 
                                      partial(self._set_value,"reflow_rate","Target rate [°C/s]: "))
         self.process_menu.add_option("6", 
-                                     lambda: f"Imposta Reflow peak time: {time_convert_str(self.params['reflow_peak_time']) or '- [s]'}", 
+                                     lambda: f"Imposta Reflow peak time: {time_convert_str(self.params['reflow_peak_time'], ms = False) or '- [s]'}", 
                                      partial(self._set_value,"reflow_peak_time","Tempo peak [°C]: "))
         self.process_menu.add_option("7", 
                                      lambda: f"Imposta Cooling rate    : {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time            : {time_convert_str(self.params['cooling_time_calc']) or '- [s]'}", 
@@ -358,7 +357,7 @@ class SaldaturaSMD:
         timestamp = get_timestamp(readable=False)
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
-        
+
         preheat = Heating("Pre-heating", self.ctx, self.params['ph_temp'], self.params['ph_time_calc'], self.params['ph_rate'])
         soaking = Soaking("Soaking", self.ctx, self.params['soak_temp_calc'], self.params['soak_time'])
         reflow = Heating("Reflow", self.ctx, self.params['reflow_temp'], self.params['reflow_time_calc'], self.params['reflow_rate'])
@@ -413,3 +412,4 @@ class SaldaturaSMD:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             self.ctx.sq.log_samples()
+            clear_values(self.params, self.process_menu)

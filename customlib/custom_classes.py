@@ -66,13 +66,15 @@ class Fase:
         sys.stdout.write("\033[F\033[K")
 
         print(f"{self.name} in corso... Temperatura attuale: {temp:.2f} °C")
-        print(f"Tempo trascorso: {time_convert_str(elapsed, ms=True)}")
+        print(f"Tempo trascorso: {time_convert_str(elapsed, ms=False)}")
 
-        lunghezza_barra = 50
+        lunghezza_barra = 43
+        #TODO round per max integer
         percentuale_barra = int(lunghezza_barra * progress)
         barra = "█" * percentuale_barra + "_" * (lunghezza_barra - percentuale_barra)
         text = int(progress*100)
         print(f"[{barra}] {text}%")
+        #TODO valori real time
         
 
 
@@ -85,15 +87,16 @@ class Heating(Fase):
                  target_temp_rate:float | None = None, 
                  timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, target_temp_rate, timeout_limit)
+        self.start_temp:float = 0.0
 
 
     def run(self):
         self.step_start_time = time.time()
-        last_temp = self.ctx.tc.read_temp_safe()
+        self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
             self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 20 #TODO per il momento lasciamo 0.5°C/sec + 20 sec
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}\n\n\n")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento{ANSI.RESET}\n\n\n")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
@@ -105,7 +108,8 @@ class Heating(Fase):
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
                     self.ctx.ssr_res.turn_on()
-                    progress = min(temp / self.target_temp, 1.0)
+                    #TODO upfate progress bar
+                    progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
                     self.print_status(elapsed_time, temp, progress)
                     #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
                 else:
@@ -183,11 +187,12 @@ class Cooling(Fase):
                  target_temp_rate:float | None, 
                  timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, target_temp_rate, timeout_limit)
+        self.start_temp:float = 0.0
         
     
     def run(self):
         self.step_start_time = time.time()
-        last_temp = self.ctx.tc.read_temp_safe()
+        self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n{ANSI.RESET}")
         while not self.is_done:
