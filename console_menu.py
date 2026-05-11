@@ -1,6 +1,6 @@
 from typing import Any
-
 from customlib.functions import clear_console
+
 
 class ANSI:
     RESET = "\033[0m"

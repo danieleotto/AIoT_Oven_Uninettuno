@@ -30,9 +30,14 @@ class Context:
   
 
 
-
 class Fase:
-    def __init__(self, name:str, ctx:Context, target_temp:float | None = None, target_time:float | None = None, target_temp_rate:float | None = None, timeout_limit:float | None = None) -> None:
+    def __init__(self, 
+                 name:str, 
+                 ctx:Context, 
+                 target_temp:float | None = None, 
+                 target_time:float | None = None, 
+                 target_temp_rate:float | None = None, 
+                 timeout_limit:float | None = None) -> None:
         self.name = name
         self.ctx = ctx
         self.target_temp = target_temp
@@ -71,9 +76,14 @@ class Fase:
         
 
 
-
 class Heating(Fase):
-    def __init__(self, name:str, ctx:Context, target_temp:float, target_time:float, target_temp_rate:float | None = None, timeout_limit:float | None = None) -> None:
+    def __init__(self, 
+                 name:str, 
+                 ctx:Context, 
+                 target_temp:float, 
+                 target_time:float, 
+                 target_temp_rate:float | None = None, 
+                 timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, target_temp_rate, timeout_limit)
 
 
@@ -82,7 +92,7 @@ class Heating(Fase):
         last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 #per il momento lasciamo 0.5 grado/secondo come limite minimo di riscaldamento (per scaldarsi 50 gradi ha a disposiizone max 50 secondi) 
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 20 #TODO per il momento lasciamo 0.5°C/sec + 20 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}\n\n\n")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
@@ -106,13 +116,23 @@ class Heating(Fase):
                     self.step_end_time = time.time()
                 last_time = elapsed_time
                 last_temp = temp
-                self.ctx.sq.add_sample(self.name, self.target_temp, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(),sys_temp)
-
+                self.ctx.sq.add_sample(self.name, 
+                                       self.target_temp, 
+                                       temp, elapsed_time, 
+                                       temp_rate, 
+                                       self.ctx.ssr_res.get_state(), 
+                                       self.ctx.ssr_fan.get_state(),
+                                       sys_temp)
 
 
 
 class Soaking(Fase):
-    def __init__(self, name:str, ctx:Context, target_temp:float, target_time:float, timeout_limit:float | None = None) -> None:
+    def __init__(self, 
+                 name:str, 
+                 ctx:Context, 
+                 target_temp:float, 
+                 target_time:float, 
+                 timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, None, timeout_limit)
         
     
@@ -144,13 +164,24 @@ class Soaking(Fase):
                     self.is_done = True
                 last_time = elapsed_time
                 last_temp = temp
-                self.ctx.sq.add_sample(self.name, self.target_temp, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
+                self.ctx.sq.add_sample(self.name, 
+                                       self.target_temp, 
+                                       temp, elapsed_time, 
+                                       temp_rate, 
+                                       self.ctx.ssr_res.get_state(), 
+                                       self.ctx.ssr_fan.get_state(), 
+                                       sys_temp)
        
       
       
-      
 class Cooling(Fase):
-    def __init__(self, name:str, ctx:Context, target_temp:float | None, target_time:float, target_temp_rate:float | None, timeout_limit:float | None = None) -> None:
+    def __init__(self, 
+                 name:str, 
+                 ctx:Context, 
+                 target_temp:float | None, 
+                 target_time:float, 
+                 target_temp_rate:float | None, 
+                 timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, target_temp_rate, timeout_limit)
         
     
@@ -178,4 +209,10 @@ class Cooling(Fase):
                     self.is_done = True
                 last_time = elapsed_time
                 last_temp = temp
-                self.ctx.sq.add_sample(self.name, self.target_temp, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
+                self.ctx.sq.add_sample(self.name, 
+                                       self.target_temp, 
+                                       temp, elapsed_time, 
+                                       temp_rate, 
+                                       self.ctx.ssr_res.get_state(), 
+                                       self.ctx.ssr_fan.get_state(), 
+                                       sys_temp)

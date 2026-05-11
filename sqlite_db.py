@@ -37,7 +37,15 @@ class SQLiteDB:
         self.conn.commit()
 
 
-    def add_sample(self, step:str, temp_target:float, temp_oven:float, elapsed_time:float, temp_rate:float, ssr_res_state:bool, ssr_fan_state:bool, sys_temp:float) -> None:
+    def add_sample(self, 
+                   step:str, 
+                   temp_target:float, 
+                   temp_oven:float, 
+                   elapsed_time:float, 
+                   temp_rate:float, 
+                   ssr_res_state:bool, 
+                   ssr_fan_state:bool, 
+                   sys_temp:float) -> None:
         idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
             "INSERT INTO campioni (idproc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",

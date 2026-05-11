@@ -57,8 +57,12 @@ class Essicatura:
         self.preset_menu = TextMenu("            --- PRESET ESSICATURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
         self.process_menu.add_option("P", "Presets di Essicatura", self.preset_menu)
         self.process_menu.add_option("D", "Cancella dati inseriti\n", partial(clear_values, self.params, self.process_menu))
-        self.process_menu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
-        self.process_menu.add_option("2", lambda: f"Imposta Durata      : {time_convert_str(self.params['ess_target_time']) or '- [s]'}", partial(self._set_value,"ess_target_time","Durata essicatura [s]: "))
+        self.process_menu.add_option("1", 
+                                     lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
+                                     partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
+        self.process_menu.add_option("2", 
+                                     lambda: f"Imposta Durata      : {time_convert_str(self.params['ess_target_time']) or '- [s]'}", 
+                                     partial(self._set_value,"ess_target_time","Durata essicatura [s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
         load_presets(self,"essicatura.json",self.preset_menu)     
@@ -156,9 +160,15 @@ class Ricottura:
         self.process_menu = TextMenu("                 --- RICOTTURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.preset_menu = TextMenu("             --- PRESET RICOTTURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
         self.process_menu.add_option("P", "Presets di Ricottura\n",self.preset_menu)
-        self.process_menu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
-        self.process_menu.add_option("2", lambda: f"Imposta Heat Time   : {time_convert_str(self.params['ric_target_time']) or '- [s]'}", partial(self._set_value, "ric_target_time", "Durata ricottura [s]: "))
-        self.process_menu.add_option("3", lambda: f"Imposta Cooling Rate: {self.params['cool_target_temp_rate'] or '-'} [°C/s]\n    Cooling time        : {time_convert_str(self.params['cool_target_time_calc']) or '- [s]'}", partial(self._set_value, "cool_target_temp_rate","Rate raffreddamento [°C/s]: "))
+        self.process_menu.add_option("1", 
+                                     lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
+                                     partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
+        self.process_menu.add_option("2", 
+                                     lambda: f"Imposta Heat Time   : {time_convert_str(self.params['ric_target_time']) or '- [s]'}", 
+                                     partial(self._set_value, "ric_target_time", "Durata ricottura [s]: "))
+        self.process_menu.add_option("3", 
+                                     lambda: f"Imposta Cooling Rate: {self.params['cool_target_temp_rate'] or '-'} [°C/s]\n    Cooling time        : {time_convert_str(self.params['cool_target_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value, "cool_target_temp_rate","Rate raffreddamento [°C/s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
         load_presets(self, "ricottura.json", self.preset_menu)
@@ -272,13 +282,27 @@ class SaldaturaSMD:
         self.process_menu = TextMenu("              --- SALDATURA SMD ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.preset_menu = TextMenu("           --- PRESET SALDATURA SMD ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
         self.process_menu.add_option("P", "Presets di Saldatura SMD\n",self.preset_menu)
-        self.process_menu.add_option("1", lambda: f"Imposta Pre-Heat temp   : {self.params['ph_temp'] or '-'} [°C]", partial(self._set_value,"ph_temp","Target temperatura [°C]: "))
-        self.process_menu.add_option("2", lambda: f"Imposta Pre-Heat rate   : {self.params['ph_rate'] or '-'} [°C/s]\n    Pre-Heat time           : {time_convert_str(self.params['ph_time_calc']) or '- [s]'}", partial(self._set_value,"ph_rate","Target rate [°C/s]: "))
-        self.process_menu.add_option("3", lambda: f"Imposta Soak time       : {time_convert_str(self.params['soak_time']) or '- [s]'}", partial(self._set_value,"soak_time","Tempo soak [s]: "))
-        self.process_menu.add_option("4", lambda: f"Imposta Reflow temp     : {self.params['reflow_temp'] or '-'} [°C]", partial(self._set_value,"reflow_temp","Target temperatura [°C]: "))
-        self.process_menu.add_option("5", lambda: f"Imposta Reflow rate     : {self.params['reflow_rate'] or '-'} [°C/s]\n    Reflow time             : {time_convert_str(self.params['reflow_time_calc']) or '- [s]'}", partial(self._set_value,"reflow_rate","Target rate [°C/s]: "))
-        self.process_menu.add_option("6", lambda: f"Imposta Reflow peak time: {time_convert_str(self.params['reflow_peak_time']) or '- [s]'}", partial(self._set_value,"reflow_peak_time","Tempo peak [°C]: "))
-        self.process_menu.add_option("7", lambda: f"Imposta Cooling rate    : {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time            : {time_convert_str(self.params['cooling_time_calc']) or '- [s]'}", partial(self._set_value,"cooling_rate","Target rate [s]: "))
+        self.process_menu.add_option("1", 
+                                     lambda: f"Imposta Pre-Heat temp   : {self.params['ph_temp'] or '-'} [°C]", 
+                                     partial(self._set_value,"ph_temp","Target temperatura [°C]: "))
+        self.process_menu.add_option("2", 
+                                     lambda: f"Imposta Pre-Heat rate   : {self.params['ph_rate'] or '-'} [°C/s]\n    Pre-Heat time           : {time_convert_str(self.params['ph_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value,"ph_rate","Target rate [°C/s]: "))
+        self.process_menu.add_option("3", 
+                                     lambda: f"Imposta Soak time       : {time_convert_str(self.params['soak_time']) or '- [s]'}", 
+                                     partial(self._set_value,"soak_time","Tempo soak [s]: "))
+        self.process_menu.add_option("4", 
+                                     lambda: f"Imposta Reflow temp     : {self.params['reflow_temp'] or '-'} [°C]", 
+                                     partial(self._set_value,"reflow_temp","Target temperatura [°C]: "))
+        self.process_menu.add_option("5", 
+                                     lambda: f"Imposta Reflow rate     : {self.params['reflow_rate'] or '-'} [°C/s]\n    Reflow time             : {time_convert_str(self.params['reflow_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value,"reflow_rate","Target rate [°C/s]: "))
+        self.process_menu.add_option("6", 
+                                     lambda: f"Imposta Reflow peak time: {time_convert_str(self.params['reflow_peak_time']) or '- [s]'}", 
+                                     partial(self._set_value,"reflow_peak_time","Tempo peak [°C]: "))
+        self.process_menu.add_option("7", 
+                                     lambda: f"Imposta Cooling rate    : {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time            : {time_convert_str(self.params['cooling_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value,"cooling_rate","Target rate [s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
         load_presets(self, "saldatura.json", self.preset_menu)
