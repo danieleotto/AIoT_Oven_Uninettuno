@@ -37,7 +37,15 @@ class SQLiteDB:
         self.conn.commit()
 
 
-    def add_sample(self, step:str, temp_target:float, temp_oven:float, elapsed_time:float, temp_rate:float, ssr_res_state:bool, ssr_fan_state:bool, sys_temp:float) -> None:
+    def add_sample(self, 
+                   step:str, 
+                   temp_target:float, 
+                   temp_oven:float, 
+                   elapsed_time:float, 
+                   temp_rate:float, 
+                   ssr_res_state:bool, 
+                   ssr_fan_state:bool, 
+                   sys_temp:float) -> None:
         idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
             "INSERT INTO campioni (idproc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
@@ -90,10 +98,11 @@ class SQLiteDB:
     def log_samples(self) -> None:
         last_id = self.get_last_id("listaprocessi")
         if last_id is not None:
-            query = f"SELECT timestamp FROM listaprocessi WHERE idProc = {last_id}"
-            self.cursor.execute(query)
-            timestamp = self.cursor.fetchone()[0]
-            LOG_FILE = str(timestamp) + f"_{last_id}_ProcessLog.csv"
+            # query = f"SELECT timestamp FROM listaprocessi WHERE idProc = {last_id}"
+            # self.cursor.execute(query)
+            # timestamp = self.cursor.fetchone()[0]
+            # LOG_FILE = str(timestamp) + f"_{last_id}_ProcessLog.csv"
+            LOG_FILE = get_timestamp(readable = True)
             LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
             sample_list = self.read_samples_by_id(last_id)
 

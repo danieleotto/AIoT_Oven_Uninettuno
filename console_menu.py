@@ -1,6 +1,6 @@
 from typing import Any
-
 from customlib.functions import clear_console
+
 
 class ANSI:
     RESET = "\033[0m"
@@ -129,5 +129,11 @@ class TextMenu:
         for key,opt in self.options.items():
             if opt["exec"]:
                 opt["disabled"] = False
-                
+    
+    
+    def disable_exec(self) -> None:
+        for key,opt in self.options.items():
+            if opt["exec"]:
+                opt["disabled"] = True
+
             

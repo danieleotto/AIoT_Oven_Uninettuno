@@ -3,20 +3,20 @@
     {
       "id": "1",
       "name": "PLA",
-      "target_temp": 45.0,
-      "heat_time": 21600
+      "ris_target_temp": 45.0,
+      "ess_target_time": 21600
     },
     {
       "id": "2",
       "name": "PETG",
-      "target_temp": 65.0,
-      "heat_time": 28800
+      "ris_target_temp": 65.0,
+      "ess_target_time": 28800
     },
     {
       "id": "3",
       "name": "Test",
-      "target_temp": 25.0,
-      "heat_time": 10
+      "ris_target_temp": 25.0,
+      "ess_target_time": 10
     }
   ] 
 }

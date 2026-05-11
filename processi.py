@@ -3,20 +3,18 @@ from console_menu import TextMenu, ANSI
 from functools import partial
 from customlib.functions import todo_placeholder, get_timestamp, time_convert_str, clear_console
 from customlib.custom_exceptions import ErroreTimeout, ErroreTemperatura, ErroreSonda
-from customlib.custom_classes import Context
+from customlib.custom_classes import Context, Heating, Soaking, Cooling
 
 
-
-def print_title(title:str) -> None:
-    print("\n"+"="*50)
-    print(f"{ANSI.BOLD}{ANSI.MAGENTA}{title}{ANSI.RESET}")
-    print("="*50)
-
-
-def clear_values(params:dict) -> None:
+def clear_values(params:dict, menu:TextMenu) -> None:
+    try:
         for key,val in params.items():
             params[key] = None
-        input("Errore cancellando i dati...")
+        menu.disable_exec()
+        print("Parametri cancellati...")
+        time.sleep(0.5)
+    except:
+        input("Errore durante il cancellamento dei dati.\nPremere un tasto per continuare...")
     
         
 def load_presets(self, preset_file:str, menu:TextMenu) -> None:
@@ -30,60 +28,45 @@ def load_presets(self, preset_file:str, menu:TextMenu) -> None:
             menu.add_option(item["id"], item["name"]+"\n", partial(self._set_value_from_preset, item))
         else:
             menu.add_option(item["id"], item["name"], partial(self._set_value_from_preset, item))
+    #TODO verificare il preset creators
+    menu.add_option("C", "Crea preset ", todo_placeholder)
   
-        
+  
 def is_complete(obj:dict) -> bool:
-    #TODO types (considerare di fare una classe processi)
     return all(v is not None for v in obj.values())
 
 
-def print_status(step:str, elapsed:float, temp:float, progress:float) -> None:
-    sys.stdout.write("\033[F\033[K")
-    sys.stdout.write("\033[F\033[K")
-    sys.stdout.write("\033[F\033[K")
+def print_title(title:str) -> None:
+    print("\n"+"="*50)
+    print(f"{ANSI.BOLD}{ANSI.MAGENTA}{title}{ANSI.RESET}")
+    print("="*50)
 
-    print(f"{step} in corso... Temperatura attuale: {temp:.2f} °C")
-    print(f"Tempo trascorso: {time_convert_str(elapsed, ms=True)}")
-
-    lunghezza_barra = 50
-    percentuale_barra = int(lunghezza_barra * progress)
-    barra = "█" * percentuale_barra + "_" * (lunghezza_barra - percentuale_barra)
-    text = int(progress*100)
-    print(f"[{barra}] {text}%")
-
-
-def check_timeout(elapsed:float, max_time:float, step:str) -> None:
-    if elapsed > max_time:
-        raise ErroreTimeout(step, elapsed, max_time)
-
-
-def check_temperature(elapsed:float, temp:float, target:float, step:str) -> None:
-    if target*0.9 < temp < target*1.1:
-        pass
-    else:
-        raise ErroreTemperatura(step, elapsed, temp, target)
 
     
 class Essicatura:
     """Gestisce il processo di essicatura."""
     def __init__(self, ctx:Context) -> None:
-        self.params:dict[str, float | None] = {
-            "target_temp": None,
-            "heat_time": None
-        }
         self.ctx = ctx
         self.process_name = "Essicatura"
+        self.params:dict[str, float | None] = {
+            "ris_target_temp": None,
+            "ess_target_time": None
+        }
         self.process_menu = TextMenu("                --- ESSICATURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.preset_menu = TextMenu("            --- PRESET ESSICATURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
-        self.process_menu.add_option("P", "Presets di Essicatura\n",self.preset_menu)
-        self.process_menu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['target_temp'] or '-'} [°C]", partial(self._set_value, "target_temp", "Target temperatura [°C]: "))
-        self.process_menu.add_option("2", lambda: f"Imposta Durata      : {time_convert_str(self.params['heat_time']) or '- [s]'}", partial(self._set_value,"heat_time","Durata essicatura [s]: "))
+        self.process_menu.add_option("P", "Presets di Essicatura", self.preset_menu)
+        self.process_menu.add_option("D", "Cancella dati inseriti\n", partial(clear_values, self.params, self.process_menu))
+        self.process_menu.add_option("1", 
+                                     lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
+                                     partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
+        self.process_menu.add_option("2", 
+                                     lambda: f"Imposta Durata      : {time_convert_str(self.params['ess_target_time'], ms=False) or '- [s]'}", 
+                                     partial(self._set_value,"ess_target_time","Durata essicatura [s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
-        load_presets(self,"essicatura.json",self.preset_menu)
-        self.preset_menu.add_option("C", "Crea preset ", todo_placeholder)
+        load_presets(self,"essicatura.json",self.preset_menu)     
      
-         
+
     def _set_value(self, key:str, message:str) -> None:
         try:
             v = float(input(message))
@@ -96,8 +79,8 @@ class Essicatura:
     
     
     def _set_value_from_preset(self, value):
-        self.params["target_temp"] = value["target_temp"]
-        self.params["heat_time"] = value["heat_time"]
+        self.params["ris_target_temp"] = value["ris_target_temp"]
+        self.params["ess_target_time"] = value["ess_target_time"]
         if is_complete(self.params):
             self.process_menu.enable_exec()
         print("Preset caricato...")
@@ -106,101 +89,36 @@ class Essicatura:
         
     
     def run(self) -> str:
-        #TODO completare logica
-        steps = {"heating":False, "dehydrating": False}
         timestamp = get_timestamp(readable=False)
-        t = self.params["target_temp"]
-        ti = self.params["heat_time"]
-        last_time:float = 0.0
-        start_time:float = 0.0
-        
         self.ctx.sq.add_process(timestamp, self.process_name)
+        start_time:float = time.time()
+        
+        riscaldamento = Heating("Riscaldamento", self.ctx, self.params['ris_target_temp'], None, None)
+        essicatura = Soaking("Essicatura", self.ctx, self.params['ris_target_temp'], self.params['ess_target_time'])
+
         try:
-            clear_console()
+            clear_console()    
             print_title(self.process_menu.title)
             print("Press CTRL+C per interrompere il processo.\n")
-            last_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
-            start_time = heating_start_time = time.time()
-            MAX_TIME:float = (t - last_temp) / 0.5 #per il momento lasciamo 0.5 grado/secondo come limite minimo di riscaldamento (per scaldarsi 50 gradi ha a disposiizone max 50 secondi)
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...{ANSI.RESET}\n\n\n")
-            while not steps["heating"]:
-                elapsed_time = time.time() - heating_start_time
-                delta_time:float = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < t:
-                        check_timeout(elapsed_time, MAX_TIME, "Riscaldamento")
-                        self.ctx.ssr_res.turn_on()
-                        progress = min(temp / t, 1.0)
-                        print_status("Riscaldamento", elapsed_time, temp, progress)
-                        #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                        print_status("Riscaldamento", elapsed_time, temp, 1.0)
-                        print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["heating"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("heating", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(),sys_temp)
-                    
-            dehydr_start_time = time.time()
-            last_time = 0
-            last_temp = self.ctx.tc.read_temp_safe()
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase essicazione...{ANSI.RESET}\n\n\n")
-            while not steps["dehydrating"]:
-                elapsed_time = time.time() - dehydr_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < t:
-                        self.ctx.ssr_res.turn_on()
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                    check_temperature(elapsed_time, temp, t, "Essicatura")
-                    if elapsed_time < ti:
-                        progress = min(elapsed_time / ti, 1.0)
-                        print_status(self.process_name, elapsed_time, temp, progress)
-                    else:
-                        print_status(self.process_name, elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.turn_off()
-                        print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["dehydrating"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("dehydrating", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
+            start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             
+            riscaldamento.run()
+            essicatura.run()
+                    
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "OK")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {time_convert_str(process_time)}.\nPremere un tasto per continuare...{ANSI.RESET}\n")    
             return "MAIN_MENU"
                 
         except KeyboardInterrupt:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "USER_STOP")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
 
         except ErroreTimeout as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Timeout nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
             print(f"- Il forno non ha raggiunto la temperatura target nel tempo massimo di {time_convert_str(e.max_time)}{ANSI.RESET}")
             input("Premere un tasto per continuare...")
@@ -208,54 +126,59 @@ class Essicatura:
 
         except ErroreTemperatura as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
             print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
         except ErroreSonda:
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
-            clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
+
+        finally:
+            self.ctx.ssr_res.turn_off()
+            self.ctx.ssr_fan.turn_off()
+            self.ctx.sq.log_samples()
+            clear_values(self.params, self.process_menu)
+
 
 
 class Ricottura:
     """Gestisce il processo di ricottura."""
     def __init__(self, ctx:Context) -> None:
-        self.params:dict[str, float | None] = {
-            "target_temp": None,
-            "reheat_duration": None,
-            "cooling_rate": None,
-            "cooling_time_calc": None
-        }
         self.ctx = ctx
         self.process_name = "Ricottura"
+        self.params:dict[str, float | None] = {
+            "ris_target_temp": None,
+            "ric_target_time": None,
+            "cool_target_temp_rate": None,
+            "cool_target_time_calc": None
+        }
         self.process_menu = TextMenu("                 --- RICOTTURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.preset_menu = TextMenu("             --- PRESET RICOTTURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
         self.process_menu.add_option("P", "Presets di Ricottura\n",self.preset_menu)
-        self.process_menu.add_option("1", lambda: f"Imposta Target Temp.: {self.params['target_temp'] or '-'} [°C]", partial(self._set_value, "target_temp", "Target temperatura [°C]: "))
-        self.process_menu.add_option("2", lambda: f"Imposta Heat Time   : {time_convert_str(self.params['reheat_duration']) or '- [s]'}", partial(self._set_value, "reheat_duration", "Durata ricottura [s]: "))
-        self.process_menu.add_option("3", lambda: f"Imposta Cooling Rate: {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time        : {time_convert_str(self.params['cooling_time_calc']) or '- [s]'}", partial(self._set_value, "cooling_rate","Rate raffreddamento [°C/s]: "))
+        self.process_menu.add_option("1", 
+                                     lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
+                                     partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
+        self.process_menu.add_option("2", 
+                                     lambda: f"Imposta Heat Time   : {time_convert_str(self.params['ric_target_time'], ms = False) or '- [s]'}", 
+                                     partial(self._set_value, "ric_target_time", "Durata ricottura [s]: "))
+        self.process_menu.add_option("3", 
+                                     lambda: f"Imposta Cooling Rate: {self.params['cool_target_temp_rate'] or '-'} [°C/s]\n    Cooling time        : {time_convert_str(self.params['cool_target_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value, "cool_target_temp_rate","Rate raffreddamento [°C/s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
         load_presets(self, "ricottura.json", self.preset_menu)
-        self.preset_menu.add_option("C", "Crea preset ", todo_placeholder)
      
         
     def _set_value(self, value, message):
         try:
             v = float(input(message))
             self.params[value] = v
-            if self.params["cooling_rate"] and self.params["target_temp"]:
-                self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
+            if self.params["cool_target_temp_rate"] and self.params["ris_target_temp"]:
+                self.params["cool_target_time_calc"] = round((self.params["ris_target_temp"] - 20) / self.params["cool_target_temp_rate"])
             if is_complete(self.params):
                 self.process_menu.enable_exec()
         except ValueError:
@@ -264,11 +187,11 @@ class Ricottura:
     
     
     def _set_value_from_preset(self, item):
-        self.params["target_temp"] = item["target_temp"]
-        self.params["reheat_duration"] = item["reheat_duration"]
-        self.params["cooling_rate"] = item["cooling_rate"]
-        if self.params["cooling_rate"] and self.params["target_temp"]:
-            self.params["cooling_time_calc"] = round((self.params["target_temp"] - 20) / self.params["cooling_rate"])
+        self.params["ris_target_temp"] = item["ris_target_temp"]
+        self.params["ric_target_time"] = item["ric_target_time"]
+        self.params["cool_target_temp_rate"] = item["cool_target_temp_rate"]
+        if self.params["cool_target_temp_rate"] and self.params["ris_target_temp"]:
+            self.params["cool_target_time_calc"] = round((self.params["ris_target_temp"] - 20) / self.params["cool_target_temp_rate"])
         if is_complete(self.params):
             self.process_menu.enable_exec()
         print("Preset caricato...")
@@ -277,127 +200,40 @@ class Ricottura:
         
     
     def run(self) -> str:
-        steps = {"heating":False, "soaking": False, "cooling": False}
         timestamp = get_timestamp(readable=False)
-        t = self.params["target_temp"]
-        sti = self.params["reheat_duration"]
-        cr = self.params["cooling_rate"] #TODO
-        cti = self.params["cooling_time_calc"]
-        last_time:float = 0
-        start_time:float = 0
-        
         self.ctx.sq.add_process(timestamp, self.process_name)
+        start_time:float = time.time()
+        
+        
+        riscaldamento = Heating("Riscaldamento", self.ctx, self.params['ris_target_temp'], None, None)
+        ricottura = Soaking("Ricottura", self.ctx, self.params['ris_target_temp'], self.params['ric_target_time'], None)
+        raffreddamento = Cooling("Raffreddamento", self.ctx, None, self.params['cool_target_time_calc'], self.params['cool_target_temp_rate'])
+                
         try:
             clear_console()
             print_title(self.process_menu.title)
             print("Premi CTRL+C per interrompere il processo.\n")
-            last_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
-            start_time = heat_start_time = time.time()
-            MAX_TIME:float = (t - last_temp) / 0.5 #vedi commento su essicatura
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento...\n\n\n{ANSI.RESET}")
-            while not steps["heating"]:
-                elapsed_time = time.time() - heat_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < t:
-                        check_timeout(elapsed_time, MAX_TIME, "Riscaldamento")
-                        self.ctx.ssr_res.turn_on()
-                        progress = min(temp / t, 1.0)
-                        print_status("Riscaldamento", elapsed_time, temp, progress)
-                        #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                        print_status("Riscaldamento", elapsed_time, temp, 1.0)
-                        print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["heating"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("heating", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
-                
-            soak_start_time = time.time()
-            last_time = 0
-            last_temp = self.ctx.tc.read_temp_safe()
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n{ANSI.RESET}")
-            while not steps["soaking"]:
-                elapsed_time = time.time() - soak_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < t:
-                        self.ctx.ssr_res.turn_on()
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                    check_temperature(elapsed_time, temp, t, "Ricottura")
-                    if elapsed_time < sti:
-                        progress = min(elapsed_time / sti, 1.0)
-                        print_status("Ricottura", elapsed_time, temp, progress)
-                    else:
-                        print_status("Ricottura", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.turn_off()
-                        print(f"Ricottura completata in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["soaking"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("soaking", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
-                
-            cooling_start_time = time.time()
-            last_time = 0
-            last_temp = self.ctx.tc.read_temp_safe()
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n{ANSI.RESET}")
-            while not steps["cooling"]:
-                elapsed_time = time.time() - cooling_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO adddht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if elapsed_time < cti:
-                        #TODO controllo raffreddamento (inseriamo in controllo temperauta?)
-                        progress = min(elapsed_time / cti, 1.0)
-                        print_status("Raffreddamento", elapsed_time, temp, progress)
-                    else:
-                        print_status("Raffreddamento", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.turn_off()
-                        print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["cooling"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("cooling", t, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
+            start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
+            raffreddamento.target_temp = start_temp + 20 #messo qui per poter essere intercettato dal try
+            
+            riscaldamento.run()
+            ricottura.run()
+            raffreddamento.run()               
                     
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "OK")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {time_convert_str(process_time)}.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
         except KeyboardInterrupt:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "USER_STOP")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
 
         except ErroreTimeout as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Timeout nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
             print(f"- Il forno non ha raggiunto la temperatura target nel tempo massimo di {time_convert_str(e.max_time)}{ANSI.RESET}")
             input("Premere un tasto per continuare...")
@@ -405,28 +241,31 @@ class Ricottura:
 
         except ErroreTemperatura as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
             print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
         except ErroreSonda:
+            print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
+            input("Premere un tasto per continuare...")
+            return "MAIN_MENU"
+        
+        finally:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
-            clear_values(self.params)
-            return "MAIN_MENU"
+            self.ctx.sq.log_samples()
+            clear_values(self.params, self.process_menu)
 
 
 
 class SaldaturaSMD:
     """Gestisce il processo di saldatura SMD per reflow."""
     def __init__(self, ctx:Context) -> None:
-        self.params = {
+        self.ctx = ctx
+        self.process_name = "Saldatura"
+        self.params:dict[str, float | None] = {
             "ph_temp": None,
             "ph_rate": None,
             "ph_time_calc": None,
@@ -439,22 +278,33 @@ class SaldaturaSMD:
             "cooling_rate": None,
             "cooling_time_calc": None,           
         }
-        self.ctx = ctx
-        self.process_name = "Saldatura"
         self.process_menu = TextMenu("              --- SALDATURA SMD ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.preset_menu = TextMenu("           --- PRESET SALDATURA SMD ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
         self.process_menu.add_option("P", "Presets di Saldatura SMD\n",self.preset_menu)
-        self.process_menu.add_option("1", lambda: f"Imposta Pre-Heat temp   : {self.params['ph_temp'] or '-'} [°C]", partial(self._set_value,"ph_temp","Target temperatura [°C]: "))
-        self.process_menu.add_option("2", lambda: f"Imposta Pre-Heat rate   : {self.params['ph_rate'] or '-'} [°C/s]\n    Pre-Heat time           : {time_convert_str(self.params['ph_time_calc']) or '- [s]'}", partial(self._set_value,"ph_rate","Target rate [°C/s]: "))
-        self.process_menu.add_option("3", lambda: f"Imposta Soak time       : {time_convert_str(self.params['soak_time']) or '- [s]'}", partial(self._set_value,"soak_time","Tempo soak [s]: "))
-        self.process_menu.add_option("4", lambda: f"Imposta Reflow temp     : {self.params['reflow_temp'] or '-'} [°C]", partial(self._set_value,"reflow_temp","Target temperatura [°C]: "))
-        self.process_menu.add_option("5", lambda: f"Imposta Reflow rate     : {self.params['reflow_rate'] or '-'} [°C/s]\n    Reflow time             : {time_convert_str(self.params['reflow_time_calc']) or '- [s]'}", partial(self._set_value,"reflow_rate","Target rate [°C/s]: "))
-        self.process_menu.add_option("6", lambda: f"Imposta Reflow peak time: {time_convert_str(self.params['reflow_peak_time']) or '- [s]'}", partial(self._set_value,"reflow_peak_time","Tempo peak [°C]: "))
-        self.process_menu.add_option("7", lambda: f"Imposta Cooling rate    : {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time            : {time_convert_str(self.params['cooling_time_calc']) or '- [s]'}", partial(self._set_value,"cooling_rate","Target rate [s]: "))
+        self.process_menu.add_option("1", 
+                                     lambda: f"Imposta Pre-Heat temp   : {self.params['ph_temp'] or '-'} [°C]", 
+                                     partial(self._set_value,"ph_temp","Target temperatura [°C]: "))
+        self.process_menu.add_option("2", 
+                                     lambda: f"Imposta Pre-Heat rate   : {self.params['ph_rate'] or '-'} [°C/s]\n    Pre-Heat time           : {time_convert_str(self.params['ph_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value,"ph_rate","Target rate [°C/s]: "))
+        self.process_menu.add_option("3", 
+                                     lambda: f"Imposta Soak time       : {time_convert_str(self.params['soak_time'], ms = False) or '- [s]'}", 
+                                     partial(self._set_value,"soak_time","Tempo soak [s]: "))
+        self.process_menu.add_option("4", 
+                                     lambda: f"Imposta Reflow temp     : {self.params['reflow_temp'] or '-'} [°C]", 
+                                     partial(self._set_value,"reflow_temp","Target temperatura [°C]: "))
+        self.process_menu.add_option("5", 
+                                     lambda: f"Imposta Reflow rate     : {self.params['reflow_rate'] or '-'} [°C/s]\n    Reflow time             : {time_convert_str(self.params['reflow_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value,"reflow_rate","Target rate [°C/s]: "))
+        self.process_menu.add_option("6", 
+                                     lambda: f"Imposta Reflow peak time: {time_convert_str(self.params['reflow_peak_time'], ms = False) or '- [s]'}", 
+                                     partial(self._set_value,"reflow_peak_time","Tempo peak [°C]: "))
+        self.process_menu.add_option("7", 
+                                     lambda: f"Imposta Cooling rate    : {self.params['cooling_rate'] or '-'} [°C/s]\n    Cooling time            : {time_convert_str(self.params['cooling_time_calc']) or '- [s]'}", 
+                                     partial(self._set_value,"cooling_rate","Target rate [s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
         load_presets(self, "saldatura.json", self.preset_menu)
-        self.preset_menu.add_option("C", "Crea preset ", todo_placeholder)
      
         
     def _set_value(self, value, message):
@@ -504,191 +354,44 @@ class SaldaturaSMD:
         
     
     def run(self) -> str:
-        steps = {"preheating":False, "soaking":False, "reflowheat":False, "reflow":False, "cooling":False}
         timestamp = get_timestamp(readable=False)
-        pt = self.params["ph_temp"]
-        pr = self.params["ph_rate"]
-        pti = self.params["ph_time_calc"]
-        st = self.params["soak_temp_calc"]
-        sti = self.params["soak_time"]
-        rt = rpt = self.params["reflow_temp"]
-        rr = self.params["reflow_rate"]
-        rti = self.params["reflow_time_calc"]
-        rpti = self.params["reflow_peak_time"]
-        cr = self.params["cooling_rate"]
-        cti = self.params["cooling_time_calc"]
-        last_time: float = 0
-        start_time: float = 0
-        
         self.ctx.sq.add_process(timestamp, self.process_name)
+        start_time:float = time.time()
+
+        preheat = Heating("Pre-heating", self.ctx, self.params['ph_temp'], self.params['ph_time_calc'], self.params['ph_rate'])
+        soaking = Soaking("Soaking", self.ctx, self.params['soak_temp_calc'], self.params['soak_time'])
+        reflow = Heating("Reflow", self.ctx, self.params['reflow_temp'], self.params['reflow_time_calc'], self.params['reflow_rate'])
+        reflow_peak = Soaking("Reflow Peak Heat", self.ctx, self.params['reflow_temp'], self.params['reflow_peak_time'])
+        cooling= Cooling("Cooling", self.ctx, None, self.params['cooling_time_calc'], self.params['cooling_rate'])
+        
+        
         try:
             clear_console()
             print_title(self.process_menu.title)
             print("Premi CTRL+C per interrompere il processo.\n")
-            last_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
-            start_time = preheat_start_time = time.time()
-            MAX_TIME:float = (pt - last_temp) / 0.5 #vedi commento su essicatura
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento per pre-heat...\n\n\n{ANSI.RESET}")
-            while not steps["preheating"]:
-                elapsed_time = time.time() - preheat_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < pt:
-                        check_timeout(elapsed_time, MAX_TIME, "Pre-Heating")
-                        self.ctx.ssr_res.turn_on()
-                        progress = min(temp / pt, 1.0)
-                        print_status("Pre-Heating", elapsed_time, temp, progress)
-                        #TODO aggiungere il sfatyoff se maxtime superato
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                        print_status("Pre-Heating", elapsed_time, temp, 1.0)
-                        print(f"Pre-Heating completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["preheating"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("preheating", pt, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
-                    
-            soak_start_time = time.time()
-            last_time = 0
-            last_temp = self.ctx.tc.read_temp_safe()
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n{ANSI.RESET}")
-            while not steps["soaking"]:
-                elapsed_time = time.time() - soak_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < st:
-                        self.ctx.ssr_res.turn_on()
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                    check_temperature(elapsed_time, temp, st, "Soaking")
-                    if elapsed_time < sti:
-                        progress = elapsed_time / sti
-                        print_status("Soaking", elapsed_time, temp, progress)
-                    else:
-                        print_status("Soaking", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.turn_off()
-                        print(f"Soaking completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["soaking"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("soaking", st, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
+            start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
+            cooling.target_time = start_temp + 20 #TODO vedi commento su ricottura
             
-            reflow_start_time = time.time()
-            last_time = 0
-            last_temp = self.ctx.tc.read_temp_safe()
-            MAX_TIME:float = (rt - last_temp) / 0.5
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase reflow...\n\n\n{ANSI.RESET}")
-            while not steps["reflowheat"]:
-                elapsed_time = time.time() - reflow_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < rt:
-                        check_timeout(elapsed_time, MAX_TIME, "Reflow Heating")
-                        self.ctx.ssr_res.turn_on()
-                        progress = min(temp / rt, 1.0)
-                        print_status("Reflow Heating", elapsed_time, temp, progress)
-                        #TODO safetyoff
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                        print_status("Reflow Heating", elapsed_time, temp, 1.0)
-                        print(f"Reflow Heating completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["reflowheat"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("reflow_heat", rt, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(),sys_temp)                   
-            
-            reflow_peak_start_time = time.time()
-            last_time = 0
-            last_temp = self.ctx.tc.read_temp_safe()
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase picco reflow...{ANSI.RESET}\n\n\n")
-            while not steps["reflow"]:
-                elapsed_time = time.time() - reflow_peak_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if temp < rpt:
-                        self.ctx.ssr_res.turn_on()
-                    else:
-                        self.ctx.ssr_res.turn_off()
-                    check_temperature(elapsed_time, temp, rpt, "Reflow Peak")
-                    if elapsed_time < rpti:
-                        progress = min(elapsed_time / rpti, 1.0)
-                        print_status("Reflow Peak", elapsed_time, temp, progress)
-                    else:
-                        print_status("Reflow Peak", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.turn_off()
-                        print(f"Reflow Peak completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["reflow"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("reflow", rpt, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
-            
-            cooling_start_time = time.time()
-            last_time = 0
-            last_temp = self.ctx.tc.read_temp_safe()
-            print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n{ANSI.RESET}")
-            while not steps["cooling"]:
-                elapsed_time = time.time() - cooling_start_time
-                delta_time = elapsed_time - last_time
-                if delta_time > self.ctx.sampling_interval:
-                    sys_temp = 0 #TODO add dht
-                    temp = self.ctx.tc.read_temp_safe()
-                    delta_temp = temp - last_temp
-                    temp_rate = delta_temp / delta_time
-                    if elapsed_time < cti:
-                        #TODO controllo raffreddamento come ricottura
-                        progress = min(elapsed_time / cti, 1.0)
-                        print_status("Raffreddamento", elapsed_time, temp, progress)
-                    else:
-                        print_status("Rafreddamento", elapsed_time, temp, 1.0)
-                        self.ctx.ssr_res.turn_off()
-                        print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
-                        steps["cooling"] = True
-                    last_time = elapsed_time
-                    last_temp = temp
-                    self.ctx.sq.add_sample("cooling", cti, temp, elapsed_time, temp_rate, self.ctx.ssr_res.get_state(), self.ctx.ssr_fan.get_state(), sys_temp)
-                    
+            preheat.run()
+            soaking.run()
+            reflow.run()
+            reflow_peak.run()
+            cooling.run()
+                                
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "OK")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {time_convert_str(process_time)}.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
         except KeyboardInterrupt:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "USER_STOP")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
         except ErroreTimeout as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Timeout nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
             print(f"- Il forno non ha raggiunto la temperatura target nel tempo massimo di {time_convert_str(e.max_time)}{ANSI.RESET}")
             input("Premere un tasto per continuare...")
@@ -696,18 +399,17 @@ class SaldaturaSMD:
 
         except ErroreTemperatura as e:
             process_time = time.time() - start_time
-            self.ctx.ssr_res.turn_off()
-            self.ctx.ssr_fan.turn_off()
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
-            self.ctx.sq.log_samples()
-            clear_values(self.params)
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
             print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
         except ErroreSonda:
+            return "MAIN_MENU"
+        
+        finally:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
-            clear_values(self.params)
-            return "MAIN_MENU"
+            self.ctx.sq.log_samples()
+            clear_values(self.params, self.process_menu)
