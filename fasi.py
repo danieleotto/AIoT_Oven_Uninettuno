@@ -40,21 +40,31 @@ class Fase:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
 
 
-    def print_status(self, elapsed:float, temp:float, progress:float, power:float, ssr_res_state:str, ssr_fan_state:str) -> None:
-        sys.stdout.write("\033[F\033[K")
-        sys.stdout.write("\033[F\033[K")
-        sys.stdout.write("\033[F\033[K")
-        sys.stdout.write("\033[F\033[K")
+    def print_status(self,
+                     elapsed:float,
+                     temp:float,
+                     progress:float,
+                     res_power:float,
+                     fan_power:float,
+                     ssr_res_state:str,
+                     ssr_fan_state:str,
+                     sys_temp:float,
+                     power_values:tuple[float, float, float] = (220,10,2200)) -> None:
+        for i in range (1,6):
+            sys.stdout.write("\033[F\033[K")
 
-        print(f"{self.name} in corso... Temperatura attuale: {temp:.2f} °C")
-        print(f"Tempo trascorso: {time_convert_str(elapsed, ms=False)}")
+        print(f"{self.name} in corso...")
+        print(f"Tempo trascorso: {time_convert_str(elapsed, ms=False)} | Temperatura: {temp:.1f} °C")
 
         lunghezza_barra = 43
         percentuale_barra = max(0, math.floor(lunghezza_barra * progress))
         barra = "█" * percentuale_barra + "_" * (lunghezza_barra - percentuale_barra)
         text = max(0, math.floor(progress * 100))
         print(f"[{barra}] {text}%")
-        print(f"Tempo tras.: {time_convert_str(elapsed)} - SSR_Res: {ssr_res_state}|{power:.1f} - SSR_Fan: {ssr_fan_state}|PH") #TODO power per fan
+        print(f"Temperatura sistema: {sys_temp:.1f}")
+        print(f"SSR_Res: state {ssr_res_state} - power {res_power:.2f}")
+        print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
+        print(f"Voltage: {power_values[0]:.0f} V | Current: {power_values[1]:.1f} A | Power: {power_values[2]:.0f} W")
         
     
     def set_pid(self, kp, ki, kd, target):
@@ -81,7 +91,7 @@ class Heating(Fase):
         last_time:float = 0.0  
         if self.timeout_limit is None:
             self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 20 #TODO per il momento lasciamo 0.5°C/sec + 20 sec
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n{ANSI.RESET}")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
@@ -137,7 +147,7 @@ class Soaking(Fase):
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n{ANSI.RESET}")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
@@ -192,7 +202,7 @@ class Cooling(Fase):
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n{ANSI.RESET}")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
