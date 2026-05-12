@@ -38,6 +38,13 @@ class SolidStateRelay:
             return False
     
     
+    def get_state_str(self) -> str:
+        if self.get_state:
+            return "ON"
+        else:
+            return "OFF"
+    
+    
     def toggle_state(self) -> None:
         if self.get_state():
             self.turn_off()

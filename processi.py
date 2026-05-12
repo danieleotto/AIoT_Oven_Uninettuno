@@ -133,6 +133,8 @@ class Essicatura:
             return "MAIN_MENU"
         
         except ErroreSonda:
+            process_time = time.time() - start_time
+            self.ctx.sq.process_complete(process_time, "TC_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
@@ -248,6 +250,8 @@ class Ricottura:
             return "MAIN_MENU"
         
         except ErroreSonda:
+            process_time = time.time() - start_time
+            self.ctx.sq.process_complete(process_time, "TC_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
@@ -406,6 +410,10 @@ class SaldaturaSMD:
             return "MAIN_MENU"
         
         except ErroreSonda:
+            process_time = time.time() - start_time
+            self.ctx.sq.process_complete(process_time, "TC_ERROR")
+            print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
+            input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
         finally:
