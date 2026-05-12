@@ -1,5 +1,4 @@
 import serial, struct
-import serial.serialutil
 
 class PZEM004T:
     setAddressBytes     = [0xB4,0xC0,0xA8,0x01,0x01,0x00,0x1E]
@@ -21,7 +20,7 @@ class PZEM004T:
             self.ser.close()
         self.ser.open()
 
-    def checkChecksum(self, _tuple):
+    def check_checksum(self, _tuple):
         _list = list(_tuple)
         _checksum = _list[-1]
         _list.pop()
@@ -31,24 +30,24 @@ class PZEM004T:
         else:
             raise Exception("Wrong Checksum")
 
-    def isReady(self):
+    def is_ready(self):
         self.ser.write(serial.to_bytes(self.setAddressBytes))
         rcv = self.ser.read(7)
         if len(rcv) == 7:
             unpacked = struct.unpack("!7B", rcv)
-            if self.checkChecksum(unpacked):
+            if self.check_checksum(unpacked):
                 return True
             else:
                 return False
         else:
             raise serial.SerialTimeoutException("Timeout setting address")
 
-    def readVoltage(self):
+    def read_voltage(self):
         self.ser.write(serial.to_bytes(self.readVoltageBytes))
         rcv = self.ser.read(7)
         if len(rcv) == 7:
             unpacked = struct.unpack("!7B", rcv)
-            if self.checkChecksum(unpacked):
+            if self.check_checksum(unpacked):
                 tension = unpacked[2]+unpacked[3]/10.0
                 return tension
             else:
@@ -56,12 +55,12 @@ class PZEM004T:
         else:
             raise serial.SerialTimeoutException("Timeout reading voltage")
 
-    def readCurrent(self):
+    def read_current(self):
         self.ser.write(serial.to_bytes(self.readCurrentBytes))
         rcv = self.ser.read(7)
         if len(rcv) == 7:
             unpacked = struct.unpack("!7B", rcv)
-            if self.checkChecksum(unpacked):
+            if self.check_checksum(unpacked):
                 current = unpacked[2]+unpacked[3]/100.0
                 return current
             else:
@@ -69,12 +68,12 @@ class PZEM004T:
         else:
             raise serial.SerialTimeoutException("Timeout reading current")
 
-    def readPower(self):
+    def read_power(self):
         self.ser.write(serial.to_bytes(self.readPowerBytes))
         rcv = self.ser.read(7)
         if len(rcv) == 7:
             unpacked = struct.unpack("!7B", rcv)
-            if self.checkChecksum(unpacked):
+            if self.check_checksum(unpacked):
                 power = unpacked[1]*256 + unpacked[2]
                 return power
             else:
@@ -82,12 +81,12 @@ class PZEM004T:
         else:
             raise serial.SerialTimeoutException("Timeout reading power")
 
-    def readRegPower(self):
+    def read_reg_power(self):
         self.ser.write(serial.to_bytes(self.readRegPowerBytes))
         rcv = self.ser.read(7)
         if len(rcv) == 7:
             unpacked = struct.unpack("!7B", rcv)
-            if self.checkChecksum(unpacked):
+            if self.check_checksum(unpacked):
                 regPower = unpacked[1]*256*256 + unpacked[2]*256 + unpacked[3]
                 return regPower
             else:
@@ -95,9 +94,9 @@ class PZEM004T:
         else:
             raise serial.SerialTimeoutException("Timeout reading registered power")
 
-    def readAll(self):
-        if self.isReady():
-            return self.readVoltage(), self.readCurrent(), self.readPower(), self.readRegPower()
+    def read_all(self):
+        if self.is_ready():
+            return self.read_voltage(), self.read_current(), self.read_power(), self.read_reg_power()
         else:
             raise serial.SerialTimeoutException("Timeout reading address")
 
