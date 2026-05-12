@@ -34,7 +34,7 @@ class Fase:
     
     
     def check_temperature(self, elapsed:float, temp:float, target:float) -> None:
-        if target*0.9 < temp < target*1.1:
+        if target - 10 < temp < target + 10:
             pass
         else:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
