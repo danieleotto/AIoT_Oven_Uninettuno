@@ -51,8 +51,13 @@ class PID:
             
     
     def calcola_output_limitato_up(self, temp_attuale:float, temp_rate:float, target_temp_rate:float | None) -> float:
-        if target_temp_rate is not None and temp_rate > target_temp_rate:
-            return self.calcola_output(temp_attuale) * 0.5 #dimezza l'output se stiamo superando il limite alto di riscaldamento
+        if target_temp_rate is not None and temp_rate > target_temp_rate: #salita temperatura troppo rapida
+            #calcoliamo l'output in base a quanto stiamo sforando il target_temp_rate con fattore di scala
+            e:float = (temp_rate - target_temp_rate) / target_temp_rate
+            K:float = 0.5
+            output_corretto:float = self.calcola_output(temp_attuale) * (1 / 1 + K * e)
+            output_corretto = max(0.0, min(1.0, output_corretto))
+            return output_corretto
         else: #riscaldamento senza limiti oppure temp_rate sotto il target
             return self.calcola_output(temp_attuale)
             
@@ -65,7 +70,12 @@ class PID:
             target_temp_rate = target_temp_rate * -1
             
         if temp_rate < target_temp_rate: #raffreddamento troppo veloce
-            return 0.2 #accendiamo le resistenze al 20% per frenare la discesa
+            #calcoliamo output in base a sforamento con fattore scala
+            e:float = (target_temp_rate - temp_rate) / abs(target_temp_rate)
+            K:float = 0.5
+            output_corretto:float = self.calcola_output(temp_attuale) + K * e
+            output_corretto = max(0.0, min(1.0, output_corretto))
+            return output_corretto
         else: #raffreddamento più lento
             return 0.0 #al momento lasciamo resistenze spente senza TODO lavorare sulla ventola
         
