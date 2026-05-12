@@ -1,33 +1,9 @@
-import time,sys
-from thermocouple import Termocoppia
-from sqlite_db import SQLiteDB
-from ss_relay import SolidStateRelay
-from temp_sensor import TempSensor
+import time,sys,math
 from customlib.functions import time_convert_str
 from console_menu import ANSI
-from customlib.custom_exceptions import ErroreTemperatura, ErroreTimeout
-
-
-class Context:
-    def __init__(
-        self, 
-        thermocouple:Termocoppia,
-        sanpling_interval:float,
-        database:SQLiteDB,
-        ssr_resistance:SolidStateRelay,
-        ssr_ovenfan:SolidStateRelay,
-        dht22:TempSensor = None,
-        pzem = None
-    ) -> None:
-        #TODO pzem sensor type
-        self.tc = thermocouple
-        self.sampling_interval = sanpling_interval
-        self.sq = database
-        self.ssr_res = ssr_resistance
-        self.ssr_fan = ssr_ovenfan
-        self.dht22 = dht22
-        self.pzem = pzem
-  
+from customlib.exceptions import ErroreTemperatura, ErroreTimeout
+from context import Context
+from pid import PID, PWM
 
 
 class Fase:
@@ -47,11 +23,14 @@ class Fase:
         self.is_done:bool = False
         self.step_start_time:float = 0.0
         self.step_end_time:float = 0.0
+        self.pid:PID | None = None
+        self.pwm:PWM = PWM(ctx.ssr_res, frequenza=1.0) #1Hz
         
     
     def check_timeout(self, elapsed:float, max_time:float) -> None:
         if elapsed > max_time:
             raise ErroreTimeout(self.name, elapsed, max_time)
+    
     
     def check_temperature(self, elapsed:float, temp:float, target:float) -> None:
         if target*0.9 < temp < target*1.1:
@@ -59,7 +38,7 @@ class Fase:
         else:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
 
-        
+
     def print_status(self, elapsed:float, temp:float, progress:float) -> None:
         sys.stdout.write("\033[F\033[K")
         sys.stdout.write("\033[F\033[K")
@@ -69,12 +48,15 @@ class Fase:
         print(f"Tempo trascorso: {time_convert_str(elapsed, ms=False)}")
 
         lunghezza_barra = 43
-        #TODO round per max integer
-        percentuale_barra = int(lunghezza_barra * progress)
+        percentuale_barra = max(0, math.floor(lunghezza_barra * progress))
         barra = "█" * percentuale_barra + "_" * (lunghezza_barra - percentuale_barra)
         text = int(progress*100)
         print(f"[{barra}] {text}%")
         #TODO valori real time
+        
+    
+    def set_pid(self, kp, ki, kd, target):
+        self.pid = PID(kp, ki, kd, target)
         
 
 
@@ -91,6 +73,7 @@ class Heating(Fase):
 
 
     def run(self):
+        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
@@ -105,24 +88,31 @@ class Heating(Fase):
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
+                
+                power = self.pid.calcola_output(temp)
+                self.pwm.pid_output(power)
+            
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
-                    self.ctx.ssr_res.turn_on()
-                    #TODO upfate progress bar
+                    # self.ctx.ssr_res.turn_on()
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
                     self.print_status(elapsed_time, temp, progress)
-                    #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
                 else:
                     self.ctx.ssr_res.turn_off()
                     self.print_status(elapsed_time, temp, 1.0)
                     print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
                     self.step_end_time = time.time()
+                    
                 last_time = elapsed_time
                 last_temp = temp
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
-                                       temp, elapsed_time, 
+                                       temp,
+                                       self.pid.kp,
+                                       self.pid.ki,
+                                       self.pid.kd, 
+                                       elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(),

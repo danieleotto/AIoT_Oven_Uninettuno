@@ -2,8 +2,8 @@ import os, time, json, sys
 from console_menu import TextMenu, ANSI
 from functools import partial
 from customlib.functions import todo_placeholder, get_timestamp, time_convert_str, clear_console
-from customlib.custom_exceptions import ErroreTimeout, ErroreTemperatura, ErroreSonda
-from customlib.custom_classes import Context, Heating, Soaking, Cooling
+from customlib.exceptions import ErroreTimeout, ErroreTemperatura, ErroreSonda
+from fasi import Context, Heating, Soaking, Cooling
 
 
 def clear_values(params:dict, menu:TextMenu) -> None:

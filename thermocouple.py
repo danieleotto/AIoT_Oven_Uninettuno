@@ -3,7 +3,7 @@ import time, sys
 from wiringpi import GPIO
 from collections import deque
 from customlib.functions import ask_continue
-from customlib.custom_exceptions import ErroreSonda
+from customlib.exceptions import ErroreSonda
 
 
 def debug_buffer_print(buffer:deque) -> str:
