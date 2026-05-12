@@ -1,4 +1,4 @@
-import serial, struct
+import serial, struct, time
 
 class PZEM004T:
     setAddressBytes     = [0xB4,0xC0,0xA8,0x01,0x01,0x00,0x1E]
@@ -32,7 +32,11 @@ class PZEM004T:
 
     def is_ready(self):
         self.ser.write(serial.to_bytes(self.setAddressBytes))
+        print("Debug sono qui")
+        time.sleep(1)
         rcv = self.ser.read(7)
+        print(rcv)
+        time.sleep(1)
         if len(rcv) == 7:
             unpacked = struct.unpack("!7B", rcv)
             if self.check_checksum(unpacked):

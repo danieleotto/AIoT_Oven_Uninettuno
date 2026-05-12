@@ -88,7 +88,7 @@ def dht22_test(dht:TempSensor, sampling_time:float) -> str:
         return "MAIN_MENU"
 
 
-def pzem_test(sensor, sampling_time:float) -> str:
+def pzem_test(sensor:PZEM004T, sampling_time:float) -> str:
     #TODO change sensor type
     print("Test sensore PZEM004T.\nCTRL+C per terminare.")
     try:
