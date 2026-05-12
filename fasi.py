@@ -107,10 +107,10 @@ class Heating(Fase):
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str())
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                 else:
                     self.ctx.ssr_res.turn_off()
-                    self.print_status(elapsed_time, temp, 1.0, res_power, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str())
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                     print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
                     self.step_end_time = time.time()
@@ -163,9 +163,9 @@ class Soaking(Fase):
                 self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str())
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                 else:
-                    self.print_status(elapsed_time, temp, 1.0, res_power, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str())
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                     self.ctx.ssr_res.turn_off()
                     print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -218,9 +218,9 @@ class Cooling(Fase):
                 
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str())
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                 else:
-                    self.print_status(elapsed_time, temp, 1.0, res_power, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str())
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                     self.ctx.ssr_res.turn_off()
                     print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
