@@ -54,7 +54,7 @@ class SQLiteDB:
                    sys_temp:float) -> None:
         idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
-            "INSERT INTO campioni (idproc, step, tempTarget, tempForno, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO campioni (idproc, step, tempTarget, tempForno, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (idproc, step, temp_target, temp_oven, kp, ki, kd, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp)
         )
         self.conn.commit()

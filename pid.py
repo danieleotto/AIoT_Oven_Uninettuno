@@ -61,7 +61,7 @@ class PWM:
         adesso = time.time()
         t = (adesso - self.last_time) % self.periodo
         tempo_accensione = self.periodo * self.duty_cycle
-        
+
         if t < tempo_accensione:
             self.ssr.turn_on()
         else:

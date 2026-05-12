@@ -24,7 +24,7 @@ class Fase:
         self.step_start_time:float = 0.0
         self.step_end_time:float = 0.0
         self.pid:PID | None = None
-        self.pwm:PWM = PWM(ctx.ssr_res, frequenza=1.0) #1Hz
+        self.pwm:PWM = PWM(self.ctx.ssr_res, frequenza=1.0) #1Hz
         
     
     def check_timeout(self, elapsed:float, max_time:float) -> None:
@@ -131,6 +131,7 @@ class Soaking(Fase):
         
     
     def run(self):
+        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
         self.step_start_time = time.time()
         last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
@@ -160,7 +161,11 @@ class Soaking(Fase):
                 last_temp = temp
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
-                                       temp, elapsed_time, 
+                                       temp,
+                                       self.pid.kp,
+                                       self.pid.ki,
+                                       self.pid.kd,
+                                       elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
@@ -206,7 +211,11 @@ class Cooling(Fase):
                 last_temp = temp
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
-                                       temp, elapsed_time, 
+                                       temp,
+                                       self.pid.kp,
+                                       self.pid.ki,
+                                       self.pid.kd,
+                                       elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
