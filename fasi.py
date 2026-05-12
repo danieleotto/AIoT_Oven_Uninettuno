@@ -52,7 +52,7 @@ class Fase:
         lunghezza_barra = 43
         percentuale_barra = max(0, math.floor(lunghezza_barra * progress))
         barra = "█" * percentuale_barra + "_" * (lunghezza_barra - percentuale_barra)
-        text = max(0, progress * 100)
+        text = max(0, math.floor(progress * 100))
         print(f"[{barra}] {text}%")
         print(f"Tempo tras.: {time_convert_str(elapsed)} - SSR_Res: {ssr_res_state}|{power:.1f} - SSR_Fan: {ssr_fan_state}|PH") #TODO power per fan
         
