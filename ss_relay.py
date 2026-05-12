@@ -39,7 +39,7 @@ class SolidStateRelay:
     
     
     def get_state_str(self) -> str:
-        if self.get_state:
+        if self.get_state():
             return "ON"
         else:
             return "OFF"
