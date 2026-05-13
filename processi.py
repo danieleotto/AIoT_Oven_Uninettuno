@@ -160,7 +160,8 @@ class Ricottura:
         }
         self.process_menu = TextMenu("                 --- RICOTTURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.preset_menu = TextMenu("             --- PRESET RICOTTURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
-        self.process_menu.add_option("P", "Presets di Ricottura\n",self.preset_menu)
+        self.process_menu.add_option("P", "Presets di Ricottura",self.preset_menu)
+        self.process_menu.add_option("D", "Cancella dati inseriti\n", partial(clear_values, self.params, self.process_menu))
         self.process_menu.add_option("1", 
                                      lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
                                      partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
@@ -284,7 +285,8 @@ class SaldaturaSMD:
         }
         self.process_menu = TextMenu("              --- SALDATURA SMD ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
         self.preset_menu = TextMenu("           --- PRESET SALDATURA SMD ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
-        self.process_menu.add_option("P", "Presets di Saldatura SMD\n",self.preset_menu)
+        self.process_menu.add_option("P", "Presets di Saldatura SMD",self.preset_menu)
+        self.process_menu.add_option("D", "Cancella dati inseriti\n", partial(clear_values, self.params, self.process_menu))
         self.process_menu.add_option("1", 
                                      lambda: f"Imposta Pre-Heat temp   : {self.params['ph_temp'] or '-'} [°C]", 
                                      partial(self._set_value,"ph_temp","Target temperatura [°C]: "))

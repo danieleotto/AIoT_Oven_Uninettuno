@@ -120,6 +120,7 @@ class Heating(Fase):
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
                                        temp,
+                                       (self.target_temp - temp),
                                        self.pid.kp,
                                        self.pid.ki,
                                        self.pid.kd, 
@@ -127,7 +128,8 @@ class Heating(Fase):
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(),
-                                       sys_temp)
+                                       sys_temp,
+                                       res_power)
 
 
 
@@ -174,6 +176,7 @@ class Soaking(Fase):
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
                                        temp,
+                                       (self.target_temp - temp),
                                        self.pid.kp,
                                        self.pid.ki,
                                        self.pid.kd,
@@ -181,7 +184,8 @@ class Soaking(Fase):
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
-                                       sys_temp)
+                                       sys_temp,
+                                       res_power)
        
       
       
@@ -229,6 +233,7 @@ class Cooling(Fase):
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
                                        temp,
+                                       (self.target_temp - temp),
                                        self.pid.kp,
                                        self.pid.ki,
                                        self.pid.kd,
@@ -236,4 +241,5 @@ class Cooling(Fase):
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
-                                       sys_temp)
+                                       sys_temp,
+                                       res_power)
