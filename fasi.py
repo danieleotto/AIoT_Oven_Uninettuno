@@ -34,7 +34,7 @@ class Fase:
     
     
     def check_temperature(self, elapsed:float, temp:float, target:float) -> None:
-        if target - 10 < temp < target + 10:
+        if target - 10 < temp < target + 10: #TODO aggiornare i limiti temperatura
             pass
         else:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
@@ -90,7 +90,7 @@ class Heating(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 20 #TODO per il momento lasciamo 0.5°C/sec + 20 sec
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 60 #TODO per il momento lasciamo 0.5°C/sec + 60 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
