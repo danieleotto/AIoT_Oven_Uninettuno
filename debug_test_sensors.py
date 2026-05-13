@@ -5,7 +5,7 @@ from functools import partial
 from temp_sensor import TempSensor
 from customlib.exceptions import ErroreSonda
 from customlib.pzem004t_lib import PZEM004T
-#from customlib.PZEM004TModbuslib import PZEM004TModbus
+#from customlib.PZEM004TModbuslib import PZEM004TModbus #funziona solo con PZEM v3
 import json, time, sys, os
 
 
@@ -101,8 +101,7 @@ def pzem_test(sensor:PZEM004T, sampling_time:float) -> str:
         return "MAIN MENU"
 
 
-# def pzem2_test(sensor, sampling_time:float) -> str:
-#     #TODO change sensor type
+# def pzem2_test(sensor:PZEM004TModbus, sampling_time:float) -> str:
 #     print("Test sensore PZEM004T Modbus.\nCTRL+C per terminare.")
 #     try:
 #         while True:
@@ -139,7 +138,7 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
                     temp = float(0)
                 print(f"\rTemp attuale: {temp:.1f}°C   Target: {target:.1f}°C", end="")
 
-                # controllo CTRL+S
+                # controllo S
                 key = get_key()
                 if key == INTERRUPT_KEY:  # CTRL+S
                     stop_cycle = True
@@ -147,9 +146,8 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
                     break
 
                 time.sleep(sampling_time)
-            # se CTRL+S → torna a chiedere nuova temperatura
             if stop_cycle:
-                continue
+                continue # se S torna a chiedere nuova temperatura
             ssr.turn_off()
             print("\nTarget raggiunto. Inizio mantenimento...\n")
             
@@ -170,19 +168,17 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
                     print("\nTemperatura scesa troppo. Fine mantenimento.")
                     break
 
-                # controllo CTRL+S
+                # controllo S
                 key = get_key()
-                if key == INTERRUPT_KEY:  # CTRL+S
+                if key == INTERRUPT_KEY:
                     stop_cycle = True
                     print("\nInterruzione ciclo (S).")
                     break
-
                 time.sleep(sampling)
 
-            # se CTRL+S → torna a chiedere nuova temperatura
             if stop_cycle:
                 continue
-            
+
             ssr.turn_off()
             print("\nCiclo completato.\n")
             break
@@ -207,8 +203,7 @@ def ssr_state(is_on:bool, ssr_r:SolidStateRelay ,ssr_f:SolidStateRelay) -> str:
     return "MAIN_MENU"
 
        
-       
-        
+            
 with open("config.json") as config_file:
     config_data = json.load(config_file)
     

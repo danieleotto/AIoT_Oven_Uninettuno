@@ -32,11 +32,10 @@ class PZEM004T:
 
     def is_ready(self):
         self.ser.write(serial.to_bytes(self.set_address_bytes))
-        print("Debug sono qui")
-        time.sleep(1)
         rcv = self.ser.read(7)
         print(rcv)
-        time.sleep(1)
+        print("Debug: Sono qui") #TODO togliere se ok
+        time.sleep(1) #TODO togliere se ok
         if len(rcv) == 7:
             unpacked = struct.unpack("!7B", rcv)
             if self.check_checksum(unpacked):
