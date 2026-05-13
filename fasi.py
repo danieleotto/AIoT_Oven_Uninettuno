@@ -189,7 +189,7 @@ class Cooling(Fase):
     def __init__(self, 
                  name:str, 
                  ctx:Context, 
-                 target_temp:float | None, 
+                 target_temp:float, 
                  target_time:float, 
                  target_temp_rate:float | None, 
                  timeout_limit:float | None = None) -> None:

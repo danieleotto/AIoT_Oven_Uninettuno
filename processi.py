@@ -100,7 +100,7 @@ class Essicatura:
             clear_console()    
             print_title(self.process_menu.title)
             print("Press CTRL+C per interrompere il processo.\n")
-            start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
+            self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             
             riscaldamento.run()
             essicatura.run()
@@ -192,7 +192,7 @@ class Ricottura:
         self.params["ris_target_temp"] = item["ris_target_temp"]
         self.params["ric_target_time"] = item["ric_target_time"]
         self.params["cool_target_temp_rate"] = item["cool_target_temp_rate"]
-        if self.params["cool_target_temp_rate"] and self.params["ris_target_temp"]:
+        if self.params["cool_target_temp_rate"] and self.params["ris_target_temp"]: #TODO controllare il 20 nella riga sotto
             self.params["cool_target_time_calc"] = round((self.params["ris_target_temp"] - 20) / self.params["cool_target_temp_rate"])
         if is_complete(self.params):
             self.process_menu.enable_exec()
@@ -205,18 +205,18 @@ class Ricottura:
         timestamp = get_timestamp(readable=False)
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
-        
+        sys_temp:float = 20.0 #TODO dht
         
         riscaldamento = Heating("Riscaldamento", self.ctx, self.params['ris_target_temp'], None, None)
         ricottura = Soaking("Ricottura", self.ctx, self.params['ris_target_temp'], self.params['ric_target_time'], None)
-        raffreddamento = Cooling("Raffreddamento", self.ctx, None, self.params['cool_target_time_calc'], self.params['cool_target_temp_rate'])
+        raffreddamento = Cooling("Raffreddamento", self.ctx, sys_temp, self.params['cool_target_time_calc'], self.params['cool_target_temp_rate'])
                 
         try:
             clear_console()
             print_title(self.process_menu.title)
             print("Premi CTRL+C per interrompere il processo.\n")
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
-            raffreddamento.target_temp = start_temp + 20 #messo qui per poter essere intercettato dal try
+            raffreddamento.target_temp = start_temp + 20.0 #TODO messo qui per poter essere intercettato dal try
             
             riscaldamento.run()
             ricottura.run()
@@ -361,12 +361,13 @@ class SaldaturaSMD:
         timestamp = get_timestamp(readable=False)
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
+        sys_temp:float = 20.0 #TODO dht 
 
         preheat = Heating("Pre-heating", self.ctx, self.params['ph_temp'], self.params['ph_time_calc'], self.params['ph_rate'])
         soaking = Soaking("Soaking", self.ctx, self.params['soak_temp_calc'], self.params['soak_time'])
         reflow = Heating("Reflow", self.ctx, self.params['reflow_temp'], self.params['reflow_time_calc'], self.params['reflow_rate'])
         reflow_peak = Soaking("Reflow Peak Heat", self.ctx, self.params['reflow_temp'], self.params['reflow_peak_time'])
-        cooling= Cooling("Cooling", self.ctx, None, self.params['cooling_time_calc'], self.params['cooling_rate'])
+        cooling= Cooling("Cooling", self.ctx, sys_temp, self.params['cooling_time_calc'], self.params['cooling_rate'])
         
         
         try:
@@ -374,7 +375,7 @@ class SaldaturaSMD:
             print_title(self.process_menu.title)
             print("Premi CTRL+C per interrompere il processo.\n")
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
-            cooling.target_time = start_temp + 20 #TODO vedi commento su ricottura
+            cooling.target_temp = start_temp + 20.0 #TODO vedi commento su ricottura
             
             preheat.run()
             soaking.run()

@@ -55,7 +55,7 @@ class PID:
             #calcoliamo l'output in base a quanto stiamo sforando il target_temp_rate con fattore di scala
             e:float = (temp_rate - target_temp_rate) / target_temp_rate
             K:float = 0.5
-            output_corretto:float = self.calcola_output(temp_attuale) * (1 / 1 + K * e)
+            output_corretto:float = self.calcola_output(temp_attuale) * (1 / (1 + K * e))
             output_corretto = max(0.0, min(1.0, output_corretto))
             return output_corretto
         else: #riscaldamento senza limiti oppure temp_rate sotto il target

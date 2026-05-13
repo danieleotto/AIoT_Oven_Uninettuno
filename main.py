@@ -5,7 +5,7 @@ from ss_relay import SolidStateRelay
 from console_menu import TextMenu, ANSI
 from processi import Essicatura, Ricottura, SaldaturaSMD
 from temp_sensor import TempSensor
-from fasi import Context
+from context import Context
 #from dht22 import DHT22
 #from PZEM004Tlib import PZEM004T
 #from PZEM004TModbuslib import PZEM004TModbus #alternativa da controllare

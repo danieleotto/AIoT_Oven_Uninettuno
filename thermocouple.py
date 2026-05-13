@@ -57,7 +57,7 @@ class Termocoppia:
     def read_temp_average(self) -> float | None:
         temp = self._read_tc()
         if temp is not None:
-            if len(self.buffer) == 10:
+            if len(self.buffer) == self.sample_size:
                 avg = self._get_average()
                 if -15 < temp -avg < 15:
                     self.buffer.append(temp)
