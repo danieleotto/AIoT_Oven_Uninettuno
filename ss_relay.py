@@ -1,15 +1,15 @@
 import wiringpi as wp
 from wiringpi import GPIO
 
+
 class SolidStateRelay:
     def __init__(self, pin:int) -> None:
         self.pin = pin
         self.is_On:bool = False
-
         wp.wiringPiSetup()
         wp.pinMode(self.pin, GPIO.OUTPUT)
         wp.digitalWrite(self.pin, GPIO.LOW)
-
+        
 
     def turn_off(self) -> None:
         wp.digitalWrite(self.pin, GPIO.LOW)
@@ -36,6 +36,13 @@ class SolidStateRelay:
             return True
         else:
             return False
+    
+    
+    def get_state_str(self) -> str:
+        if self.get_state():
+            return "ON"
+        else:
+            return "OFF"
     
     
     def toggle_state(self) -> None:

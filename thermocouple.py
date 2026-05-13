@@ -3,7 +3,7 @@ import time, sys
 from wiringpi import GPIO
 from collections import deque
 from customlib.functions import ask_continue
-from customlib.custom_exceptions import ErroreSonda
+from customlib.exceptions import ErroreSonda
 
 
 def debug_buffer_print(buffer:deque) -> str:
@@ -57,7 +57,7 @@ class Termocoppia:
     def read_temp_average(self) -> float | None:
         temp = self._read_tc()
         if temp is not None:
-            if len(self.buffer) == 10:
+            if len(self.buffer) == self.sample_size:
                 avg = self._get_average()
                 if -15 < temp -avg < 15:
                     self.buffer.append(temp)

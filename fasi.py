@@ -1,33 +1,9 @@
-import time,sys
-from thermocouple import Termocoppia
-from sqlite_db import SQLiteDB
-from ss_relay import SolidStateRelay
-from temp_sensor import TempSensor
+import time,sys,math
 from customlib.functions import time_convert_str
 from console_menu import ANSI
-from customlib.custom_exceptions import ErroreTemperatura, ErroreTimeout
-
-
-class Context:
-    def __init__(
-        self, 
-        thermocouple:Termocoppia,
-        sanpling_interval:float,
-        database:SQLiteDB,
-        ssr_resistance:SolidStateRelay,
-        ssr_ovenfan:SolidStateRelay,
-        dht22:TempSensor = None,
-        pzem = None
-    ) -> None:
-        #TODO pzem sensor type
-        self.tc = thermocouple
-        self.sampling_interval = sanpling_interval
-        self.sq = database
-        self.ssr_res = ssr_resistance
-        self.ssr_fan = ssr_ovenfan
-        self.dht22 = dht22
-        self.pzem = pzem
-  
+from customlib.exceptions import ErroreTemperatura, ErroreTimeout
+from context import Context
+from pid_pwm import PID, PWM
 
 
 class Fase:
@@ -47,34 +23,52 @@ class Fase:
         self.is_done:bool = False
         self.step_start_time:float = 0.0
         self.step_end_time:float = 0.0
+        self.pid:PID | None = None #inizializziamo nella sottoclasse
+        self.pwm_heat:PWM = PWM(self.ctx.ssr_res, frequenza=1.0) #1Hz
+        self.pwm_cool:PWM = PWM(self.ctx.ssr_fan, frequenza=1.0) #1Hz
         
     
     def check_timeout(self, elapsed:float, max_time:float) -> None:
         if elapsed > max_time:
             raise ErroreTimeout(self.name, elapsed, max_time)
     
+    
     def check_temperature(self, elapsed:float, temp:float, target:float) -> None:
-        if target*0.9 < temp < target*1.1:
+        if target - 10 < temp < target + 10: #TODO aggiornare i limiti temperatura
             pass
         else:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
 
-        
-    def print_status(self, elapsed:float, temp:float, progress:float) -> None:
-        sys.stdout.write("\033[F\033[K")
-        sys.stdout.write("\033[F\033[K")
-        sys.stdout.write("\033[F\033[K")
 
-        print(f"{self.name} in corso... Temperatura attuale: {temp:.2f} °C")
-        print(f"Tempo trascorso: {time_convert_str(elapsed, ms=False)}")
+    def print_status(self,
+                     elapsed:float,
+                     temp:float,
+                     progress:float,
+                     res_power:float,
+                     fan_power:float,
+                     ssr_res_state:str,
+                     ssr_fan_state:str,
+                     sys_temp:float,
+                     power_values:tuple[float, float, float] = (220,10,2200)) -> None:
+        for i in range (0,7):
+            sys.stdout.write("\033[F\033[K")
+
+        print(f"{self.name} in corso...")
+        print(f"Tempo trascorso: {time_convert_str(elapsed, ms=False)} | Temperatura: {temp:.1f} °C")
 
         lunghezza_barra = 43
-        #TODO round per max integer
-        percentuale_barra = int(lunghezza_barra * progress)
+        percentuale_barra = max(0, math.floor(lunghezza_barra * progress))
         barra = "█" * percentuale_barra + "_" * (lunghezza_barra - percentuale_barra)
-        text = int(progress*100)
+        text = max(0, math.floor(progress * 100))
         print(f"[{barra}] {text}%")
-        #TODO valori real time
+        print(f"Temperatura sistema: {sys_temp:.1f}")
+        print(f"SSR_Res: state {ssr_res_state} - power {res_power:.2f}")
+        print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
+        print(f"Voltage: {power_values[0]:.0f} V | Current: {power_values[1]:.1f} A | Power: {power_values[2]:.0f} W")
+        
+    
+    def set_pid(self, kp, ki, kd, target):
+        self.pid = PID(kp, ki, kd, target)
         
 
 
@@ -91,12 +85,13 @@ class Heating(Fase):
 
 
     def run(self):
+        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 20 #TODO per il momento lasciamo 0.5°C/sec + 20 sec
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento{ANSI.RESET}\n\n\n")
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 60 #TODO per il momento lasciamo 0.5°C/sec + 60 sec
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
@@ -105,24 +100,30 @@ class Heating(Fase):
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
+                
+                res_power = self.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
+                self.pwm_heat.set_pid_output(res_power)
+            
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
-                    self.ctx.ssr_res.turn_on()
-                    #TODO upfate progress bar
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
-                    self.print_status(elapsed_time, temp, progress)
-                    #TODO aggiungere il safetyoff se maxtime è superato, al momento off per debug
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                 else:
                     self.ctx.ssr_res.turn_off()
-                    self.print_status(elapsed_time, temp, 1.0)
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                     print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
                     self.step_end_time = time.time()
+                    
                 last_time = elapsed_time
                 last_temp = temp
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
-                                       temp, elapsed_time, 
+                                       temp,
+                                       self.pid.kp,
+                                       self.pid.ki,
+                                       self.pid.kd, 
+                                       elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(),
@@ -138,13 +139,15 @@ class Soaking(Fase):
                  target_time:float, 
                  timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, None, timeout_limit)
-        
+        self.start_temp:float = 0.0
+    
     
     def run(self):
+        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
         self.step_start_time = time.time()
-        last_temp = self.ctx.tc.read_temp_safe()
+        self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...{ANSI.RESET}\n\n\n")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
@@ -153,16 +156,16 @@ class Soaking(Fase):
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
-                if temp < self.target_temp:
-                    self.ctx.ssr_res.turn_on()
-                else:
-                    self.ctx.ssr_res.turn_off()
+                
+                res_power = self.pid.calcola_output(temp)
+                self.pwm_heat.set_pid_output(res_power)
+                
                 self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress)
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                 else:
-                    self.print_status(elapsed_time, temp, 1.0)
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                     self.ctx.ssr_res.turn_off()
                     print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -170,7 +173,11 @@ class Soaking(Fase):
                 last_temp = temp
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
-                                       temp, elapsed_time, 
+                                       temp,
+                                       self.pid.kp,
+                                       self.pid.ki,
+                                       self.pid.kd,
+                                       elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
@@ -182,7 +189,7 @@ class Cooling(Fase):
     def __init__(self, 
                  name:str, 
                  ctx:Context, 
-                 target_temp:float | None, 
+                 target_temp:float, 
                  target_time:float, 
                  target_temp_rate:float | None, 
                  timeout_limit:float | None = None) -> None:
@@ -191,10 +198,11 @@ class Cooling(Fase):
         
     
     def run(self):
+        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n{ANSI.RESET}")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
@@ -203,12 +211,16 @@ class Cooling(Fase):
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
+                
+                res_power = self.pid.calcola_output_limitato_down(temp, temp_rate, self.target_temp_rate)
+                self.pwm_heat.set_pid_output(res_power)
+                #TODO ventola?
+                
                 if elapsed_time < self.target_time:
-                    #TODO controllo raffreddamento (inseriamo in controllo temperauta?)
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress)
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                 else:
-                    self.print_status(elapsed_time, temp, 1.0)
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
                     self.ctx.ssr_res.turn_off()
                     print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -216,7 +228,11 @@ class Cooling(Fase):
                 last_temp = temp
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
-                                       temp, elapsed_time, 
+                                       temp,
+                                       self.pid.kp,
+                                       self.pid.ki,
+                                       self.pid.kd,
+                                       elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 

@@ -28,6 +28,9 @@ class SQLiteDB:
             step TEXT,
             tempTarget REAL,
             tempForno REAL,
+            kp REAL,
+            ki REAL,
+            kd REAL,
             elapsedTime REAL,
             tempRate REAL,
             ssrRstate BOOLEAN,
@@ -40,7 +43,10 @@ class SQLiteDB:
     def add_sample(self, 
                    step:str, 
                    temp_target:float, 
-                   temp_oven:float, 
+                   temp_oven:float,
+                   kp:float,
+                   ki:float,
+                   kd:float, 
                    elapsed_time:float, 
                    temp_rate:float, 
                    ssr_res_state:bool, 
@@ -48,8 +54,8 @@ class SQLiteDB:
                    sys_temp:float) -> None:
         idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
-            "INSERT INTO campioni (idproc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (idproc, step, temp_target, temp_oven, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp)
+            "INSERT INTO campioni (idproc, step, tempTarget, tempForno, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (idproc, step, temp_target, temp_oven, kp, ki, kd, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp)
         )
         self.conn.commit()
 
@@ -88,7 +94,6 @@ class SQLiteDB:
 
 
     def get_last_id(self, tablename:str) -> str | None:
-        #TODO return type
         query = f"SELECT * FROM {tablename} ORDER BY 1 DESC LIMIT 1"
         self.cursor.execute(query)
         r = self.cursor.fetchone()
@@ -98,11 +103,7 @@ class SQLiteDB:
     def log_samples(self) -> None:
         last_id = self.get_last_id("listaprocessi")
         if last_id is not None:
-            # query = f"SELECT timestamp FROM listaprocessi WHERE idProc = {last_id}"
-            # self.cursor.execute(query)
-            # timestamp = self.cursor.fetchone()[0]
-            # LOG_FILE = str(timestamp) + f"_{last_id}_ProcessLog.csv"
-            LOG_FILE = get_timestamp(readable = True)
+            LOG_FILE = get_timestamp(readable = True)+ f"_{last_id}_ProcessLog.csv"
             LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
             sample_list = self.read_samples_by_id(last_id)
 
@@ -117,7 +118,7 @@ class SQLiteDB:
     
     
     def log_processes(self) -> None:
-        timestamp = get_timestamp()
+        timestamp = get_timestamp(readable=True)
         LOG_FILE = timestamp + "_List.csv"
         LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
         process_list = self.read_all_processes()
