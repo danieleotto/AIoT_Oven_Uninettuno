@@ -27,18 +27,27 @@ class PID:
             
             #Parte Proporzionale    
             p:float = self.kp * errore
-            
-            #Parte Integrale
-            if delta_time > 0:
-                self.integrale += errore * delta_time
-            i:float = self.ki * self.integrale
-            
+
             #Parte Derivata
             if self.last_error is None or delta_time == 0:
                 d:float = 0
             else:
                 d = self.kd * (errore - self.last_error) / delta_time
+
+            #Parte Integrale con anti-windup
+            if delta_time > 0:
+                #controlliamo quale sarebbe il valore di output al momento
+                i_temporaneo = self.ki * (self.integrale + errore * delta_time)
+                output_temporaneo = p + i_temporaneo + d
                 
+                #anti-windup: aumentiamo l'integrale solo se non già 1
+                if self.min_output < output_temporaneo < self.max_output:
+                    self.integrale += errore * delta_time
+                else:
+                    pass
+                
+            i:float = self.ki * self.integrale
+            
             output:float = p + i + d
             output = max(self.min_output, min(self.max_output, output))
             

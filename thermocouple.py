@@ -50,7 +50,8 @@ class Termocoppia:
         if value & 0x04:
             return None
 
-        temp_c = round((value >> 3) * 0.25,1)
+        # temp_c = round((value >> 3) * 0.25,1)
+        temp_c = (value >> 3) * 0.25
         return temp_c
 
     
