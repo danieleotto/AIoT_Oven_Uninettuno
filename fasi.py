@@ -96,7 +96,7 @@ class Heating(Fase):
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
             if delta_time > self.ctx.sampling_interval:
-                sys_temp = self.ctx.dht22.get_temperature()
+                sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
@@ -154,7 +154,7 @@ class Soaking(Fase):
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
             if delta_time > self.ctx.sampling_interval:
-                sys_temp = self.ctx.dht22.get_temperature()
+                sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
@@ -211,7 +211,7 @@ class Cooling(Fase):
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
             if delta_time > self.ctx.sampling_interval:
-                sys_temp = self.ctx.dht22.get_temperature()
+                sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
