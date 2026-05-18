@@ -40,6 +40,14 @@ def print_title(title:str) -> None:
     print("\n"+"="*50)
     print(f"{ANSI.BOLD}{ANSI.MAGENTA}{title}{ANSI.RESET}")
     print("="*50)
+    
+
+def dht_ambient_safe_temp(ctx:Context) -> float:
+    t = ctx.dht22.get_temperature()
+    if t is None:
+        return 22.0
+    else:
+        return t
 
 
     
@@ -206,7 +214,7 @@ class Ricottura:
         timestamp = get_timestamp(readable=False)
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
-        sys_temp:float = 20.0 #TODO dht
+        sys_temp:float = dht_ambient_safe_temp(self.ctx)
         
         riscaldamento = Heating("Riscaldamento", self.ctx, self.params['ris_target_temp'], None, None)
         ricottura = Soaking("Ricottura", self.ctx, self.params['ris_target_temp'], self.params['ric_target_time'], None)
@@ -217,7 +225,7 @@ class Ricottura:
             print_title(self.process_menu.title)
             print("Premi CTRL+C per interrompere il processo.\n")
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
-            raffreddamento.target_temp = start_temp + 20.0 #TODO messo qui per poter essere intercettato dal try
+            raffreddamento.target_temp = start_temp + 20.0
             
             riscaldamento.run()
             ricottura.run()
@@ -363,7 +371,7 @@ class SaldaturaSMD:
         timestamp = get_timestamp(readable=False)
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
-        sys_temp:float = 20.0 #TODO dht 
+        sys_temp:float = dht_ambient_safe_temp(self.ctx)
 
         preheat = Heating("Pre-heating", self.ctx, self.params['ph_temp'], self.params['ph_time_calc'], self.params['ph_rate'])
         soaking = Soaking("Soaking", self.ctx, self.params['soak_temp_calc'], self.params['soak_time'])
@@ -377,7 +385,7 @@ class SaldaturaSMD:
             print_title(self.process_menu.title)
             print("Premi CTRL+C per interrompere il processo.\n")
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
-            cooling.target_temp = start_temp + 20.0 #TODO vedi commento su ricottura
+            cooling.target_temp = start_temp + 20.0
             
             preheat.run()
             soaking.run()
