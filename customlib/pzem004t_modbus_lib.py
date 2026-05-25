@@ -2,16 +2,16 @@ from pymodbus.client import ModbusSerialClient
 
 
 class PZEM004TModbus:
-    def __init__(self, port:str = "/dev/ttyUSB0"):
+    def __init__(self, port:str = "/dev/ttyUSB0",timeout = 1):
         self.port = port
+        self.timeout = timeout
         self.client = ModbusSerialClient(
-            method='rtu',
             port=self.port,
             baudrate=9600,
-            timeout=1,
             parity='N',
             stopbits=1,
-            bytesize=8
+            bytesize=8,
+            timeout=self.timeout
         )
         self.client.connect()
         
