@@ -14,10 +14,10 @@ class PZEM004TModbus:
             timeout=self.timeout
         )
         self.client.connect()
-        
+               
 
     def readAll(self):
-        result = self.client.read_input_registers(0, 10, slave=1)
+        result = self.client.read_input_registers(address=0, count=10, device_id=1)
         if result.isError():
             raise Exception("Errore Modbus")
         

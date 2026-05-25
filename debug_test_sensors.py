@@ -222,7 +222,7 @@ dht22 = TempSensor(DHT22_PIN)
 ssr_res = SolidStateRelay(RES_SSR_PIN)
 ssr_fan = SolidStateRelay(FAN_SSR_PIN)
 pzem = PZEM004T(config_data["PZEM_port"], config_data["PZEM_timeout"])
-pzem2 = PZEM004TModbus(config_data["PZEM_port"]) #alternativa da controllare
+pzem2 = PZEM004TModbus(config_data["PZEM_port"], config_data["PZEM_timeout"]) #alternativa da controllare
 
 m = TextMenu("Menu principale",ANSI.CYAN, ANSI.WHITE)
 m.add_option("1","Test Termocoppia", partial(tc_test, sampling))
