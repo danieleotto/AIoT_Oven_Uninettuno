@@ -1,27 +1,27 @@
-import serial
-import modbus_tk.defines as cst
-from modbus_tk import modbus_rtu
+from pymodbus.client import ModbusSerialClient
+
 
 class PZEM004TModbus:
-    def __init__(self, port):
-        if port is None:
-            self.port = '/dev/ttyUSB0'
-        else:
-            self.port = port
-        self.serial = serial.Serial(
-            port = self.port,
-            baudrate = 9600,
-            bytesize = 8,
-            parity = 'N',
-            stopbits = 1,
-            xonxoff = False,
+    def __init__(self, port:str = "/dev/ttyUSB0"):
+        self.port = port
+        self.client = ModbusSerialClient(
+            method='rtu',
+            port=self.port,
+            baudrate=9600,
+            timeout=1,
+            parity='N',
+            stopbits=1,
+            bytesize=8
         )
-        self.master = modbus_rtu.RtuMaster(self.serial)
-        self.master.set_timeout(2.0)
-        self.master.set_timeout(True)
+        self.client.connect()
+        
 
     def readAll(self):
-        data = self.master.execute(1, cst.READ_INPUT_REGISTERS,0,10)
+        result = self.client.read_input_registers(0, 10, unit=1)
+        if result.isError():
+            raise Exception("Errore Modbus")
+        
+        data = result.registers
         voltage = data[0] / 10.0 #[V]
         current = (data[1] + (data[2] << 16)) / 1000.0 #[A]
         power = (data[3] + (data[4] << 16)) / 10.0 #[W]
@@ -29,33 +29,34 @@ class PZEM004TModbus:
         frequency = data[7] / 10.0 #[Hz]
         powerfactor = data[8] / 100.0
         alarm = data[9] # 0 = no alarm
-        readings = {'voltage':voltage, 'current':current, 'power':power, 'energy':energy, 'frequency':frequency, 'powerfactor': powerfactor, 'alarm':alarm}
-        return readings
+        return {
+            'voltage':voltage,
+            'current':current,
+            'power':power,
+            'energy':energy,
+            'frequency':frequency,
+            'powerfactor': powerfactor,
+            'alarm':alarm
+        }
+        
 
     def getVoltage(self):
-        readings = self.readAll()
-        return readings['voltage']
+        return self.readAll()['voltage']
 
     def getCurrent(self):
-        readings = self.readAll()
-        return readings['current']
+        return self.readAll()['current']
 
     def getPower(self):
-        readings = self.readAll()
-        return readings['power']
+        return self.readAll()['power']
 
     def getEnergy(self):
-        readings = self.readAll()
-        return readings['energy']
+        return self.readAll()['energy']
 
     def getFrequency(self):
-        readings = self.readAll()
-        return readings['frequency']
+        return self.readAll()['frequency']
 
     def getPowerFactor(self):
-        readings = self.readAll()
-        return readings['powerfactor']
+        return self.readAll()['powerfactor']
 
     def getAlarm(self):
-        readings = self.readAll()
-        return readings['alarm']
+        return self.readAll()['alarm']
