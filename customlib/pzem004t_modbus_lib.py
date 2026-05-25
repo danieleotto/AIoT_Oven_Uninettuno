@@ -3,9 +3,13 @@ import modbus_tk.defines as cst
 from modbus_tk import modbus_rtu
 
 class PZEM004TModbus:
-    def __init__(self):
+    def __init__(self, port):
+        if port is None:
+            self.port = '/dev/ttyUSB0'
+        else:
+            self.port = port
         self.serial = serial.Serial(
-            port = '/dev/ttyS0',
+            port = self.port,
             baudrate = 9600,
             bytesize = 8,
             parity = 'N',
@@ -55,4 +59,3 @@ class PZEM004TModbus:
     def getAlarm(self):
         readings = self.readAll()
         return readings['alarm']
-
