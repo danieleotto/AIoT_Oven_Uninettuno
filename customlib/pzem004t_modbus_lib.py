@@ -17,7 +17,7 @@ class PZEM004TModbus:
                
 
     def readAll(self):
-        result = self.client.read_input_registers(address=0, count=10, device_id=1)
+        result = self.client.read_input_registers(address=0xF8, count=10, device_id=1)
         if result.isError():
             raise Exception("Errore Modbus")
         
