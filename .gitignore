@@ -6,3 +6,4 @@
 /logs/
 /customlib/__pycache__/
 /.VSCodeCounter/
+/customlib/pymodbus/

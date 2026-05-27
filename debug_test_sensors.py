@@ -4,8 +4,8 @@ from console_menu import TextMenu, ANSI
 from functools import partial
 from temp_sensor import TempSensor
 from customlib.exceptions import ErroreSonda
-#from customlib.PZEM004Tlib import PZEM004T
-#from customlib.PZEM004TModbuslib import PZEM004TModbus
+from customlib.pzem004t_lib import PZEM004T
+from customlib.pzem004t_modbus_lib import PZEM004TModbus #funziona solo con PZEM v3
 import json, time, sys, os
 
 
@@ -88,12 +88,12 @@ def dht22_test(dht:TempSensor, sampling_time:float) -> str:
         return "MAIN_MENU"
 
 
-def pzem_test(sensor, sampling_time:float) -> str:
+def pzem_test(sensor:PZEM004T, sampling_time:float) -> str:
     #TODO change sensor type
     print("Test sensore PZEM004T.\nCTRL+C per terminare.")
     try:
         while True:
-            (voltage, current, power, reg_power) = sensor.readAll()
+            (voltage, current, power, reg_power) = sensor.read_all()
             print(f"Voltage: {voltage}, Current: {current}, Power: {power}, RegPower: {reg_power}")
             time.sleep(sampling_time)
     except KeyboardInterrupt:
@@ -101,8 +101,7 @@ def pzem_test(sensor, sampling_time:float) -> str:
         return "MAIN MENU"
 
 
-def pzem2_test(sensor, sampling_time:float) -> str:
-    #TODO change sensor type
+def pzem2_test(sensor:PZEM004TModbus, sampling_time:float) -> str:
     print("Test sensore PZEM004T Modbus.\nCTRL+C per terminare.")
     try:
         while True:
@@ -139,7 +138,7 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
                     temp = float(0)
                 print(f"\rTemp attuale: {temp:.1f}°C   Target: {target:.1f}°C", end="")
 
-                # controllo CTRL+S
+                # controllo S
                 key = get_key()
                 if key == INTERRUPT_KEY:  # CTRL+S
                     stop_cycle = True
@@ -147,9 +146,8 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
                     break
 
                 time.sleep(sampling_time)
-            # se CTRL+S → torna a chiedere nuova temperatura
             if stop_cycle:
-                continue
+                continue # se S torna a chiedere nuova temperatura
             ssr.turn_off()
             print("\nTarget raggiunto. Inizio mantenimento...\n")
             
@@ -170,19 +168,17 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
                     print("\nTemperatura scesa troppo. Fine mantenimento.")
                     break
 
-                # controllo CTRL+S
+                # controllo S
                 key = get_key()
-                if key == INTERRUPT_KEY:  # CTRL+S
+                if key == INTERRUPT_KEY:
                     stop_cycle = True
                     print("\nInterruzione ciclo (S).")
                     break
-
                 time.sleep(sampling)
 
-            # se CTRL+S → torna a chiedere nuova temperatura
             if stop_cycle:
                 continue
-            
+
             ssr.turn_off()
             print("\nCiclo completato.\n")
             break
@@ -207,8 +203,7 @@ def ssr_state(is_on:bool, ssr_r:SolidStateRelay ,ssr_f:SolidStateRelay) -> str:
     return "MAIN_MENU"
 
        
-       
-        
+            
 with open("config.json") as config_file:
     config_data = json.load(config_file)
     
@@ -226,16 +221,16 @@ tc = Termocoppia(TC_SCK,TC_CS,TC_DO, sample_size)
 dht22 = TempSensor(DHT22_PIN)
 ssr_res = SolidStateRelay(RES_SSR_PIN)
 ssr_fan = SolidStateRelay(FAN_SSR_PIN)
-#pzem = PZEM004T(configData["PZEM_port"], configData["PZEM_timeout"])
-#pzem2 = PZEM004TModbus() #alternativa da controllare
+pzem = PZEM004T(config_data["PZEM_port"], config_data["PZEM_timeout"])
+pzem2 = PZEM004TModbus(config_data["PZEM_port"], config_data["PZEM_timeout"]) #alternativa da controllare
 
 m = TextMenu("Menu principale",ANSI.CYAN, ANSI.WHITE)
 m.add_option("1","Test Termocoppia", partial(tc_test, sampling))
 m.add_option("2","SSR Resistenze", partial(ssr_test, ssr_res, "Resistenze"))
 m.add_option("3","SSR Ventola", partial(ssr_test, ssr_fan, "Ventola"))
 m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))
-#m.add_option("5","Sensore PZEM004T", partial(pzem_test, pzem, sampling))
-#m.add_option("6","Sensore PZEM004T Modbus", partial(pzem2_test, pzem2, sampling))
+m.add_option("5","Sensore PZEM004T", partial(pzem_test, pzem, sampling))
+m.add_option("6","Sensore PZEM004T Modbus", partial(pzem2_test, pzem2, sampling))
 m.add_option("7","Test Ciclo Riscaldamento", partial(cycle_test, sampling, ssr_res))
 m.add_option("8","Forza tutti SSR on", partial(ssr_state, True, ssr_res, ssr_fan))
 m.add_option("9","Forza tutti SSR off", partial(ssr_state, False, ssr_res, ssr_fan))
