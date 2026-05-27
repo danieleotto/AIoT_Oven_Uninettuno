@@ -7,3 +7,4 @@
 /customlib/__pycache__/
 /.VSCodeCounter/
 /customlib/pymodbus/
+/config.json

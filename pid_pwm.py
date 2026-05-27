@@ -2,7 +2,7 @@ import time
 from ss_relay import SolidStateRelay
 
 class PID:
-    def __init__(self, kp:float, ki:float, kd:float, temp_target:float) -> None:
+    def __init__(self, kp:float | None = None, ki:float | None = None, kd:float | None = None, temp_target:float | None = None) -> None:
         self.kp = kp
         self.ki = ki
         self.kd = kd
@@ -14,6 +14,16 @@ class PID:
         self.last_time = None
         
     
+    def set_pid(self, kp:float, ki:float, kd:float) -> None:
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+
+
+    def set_pid_target(self, temp_target:float) -> None:
+        self.temp_target = temp_target
+
+
     def calcola_output(self, temp_attuale:float) -> float:
         """Calcola l'output di potenza con PID in base al valore misurato"""
         t:float = time.time()

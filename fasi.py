@@ -23,7 +23,7 @@ class Fase:
         self.is_done:bool = False
         self.step_start_time:float = 0.0
         self.step_end_time:float = 0.0
-        self.pid:PID | None = None #inizializziamo nella sottoclasse
+        self.pid:PID = PID() #inizializziamo nella sottoclasse
         self.pwm_heat:PWM = PWM(self.ctx.ssr_res, frequenza=1.0) #1Hz
         self.pwm_cool:PWM = PWM(self.ctx.ssr_fan, frequenza=1.0) #1Hz
         
@@ -66,10 +66,7 @@ class Fase:
         print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
         print(f"Voltage: {power_values[0]:.1f} V | Current: {power_values[1]:.3f} A | Power: {power_values[2]:.1f} W")
         
-    
-    def set_pid(self, kp, ki, kd, target):
-        self.pid = PID(kp, ki, kd, target)
-        
+
 
 
 class Heating(Fase):
@@ -85,12 +82,13 @@ class Heating(Fase):
 
 
     def run(self):
-        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
+        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
+        self.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 60 #TODO per il momento lasciamo 0.5°C/sec + 60 sec
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 90 #TODO per il momento lasciamo 0.5°C/sec + 90 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
@@ -154,7 +152,8 @@ class Soaking(Fase):
     
     
     def run(self):
-        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
+        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
+        self.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
@@ -220,7 +219,8 @@ class Cooling(Fase):
         
     
     def run(self):
-        self.set_pid(kp=2.0, ki=0.5, kd=1.0, target=self.target_temp)
+        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
+        self.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0

@@ -50,7 +50,7 @@ FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
 DHT22_PIN:int = config_data["DHT22_PIN"]
 sample_size:int = config_data["avg_sample_size"]
 sampling_interval:float = config_data["sample_interval"]
-pid_values:tuple[float, float, float] = (config_data["kp"], config_data["ki"], config_data["kd"])
+pid_values:dict[str, float] = {"kp": config_data["kp"], "ki": config_data["ki"], "kd": config_data["kd"]}
 
 tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN,sample_size)
 sq:SQLiteDB = SQLiteDB(config_data["db_filename"])
