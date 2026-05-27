@@ -49,7 +49,7 @@ class Fase:
                      ssr_res_state:str,
                      ssr_fan_state:str,
                      sys_temp:float,
-                     power_values:tuple[float, float, float] = (220,10,2200)) -> None:
+                     power_values:tuple[float, float, float] = (0,0,0)) -> None:
         for i in range (0,7):
             sys.stdout.write("\033[F\033[K")
 
@@ -64,7 +64,7 @@ class Fase:
         print(f"Temperatura sistema: {sys_temp:.1f}")
         print(f"SSR_Res: state {ssr_res_state} - power {res_power:.2f}")
         print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
-        print(f"Voltage: {power_values[0]:.0f} V | Current: {power_values[1]:.1f} A | Power: {power_values[2]:.0f} W")
+        print(f"Voltage: {power_values[0]:.1f} V | Current: {power_values[1]:.3f} A | Power: {power_values[2]:.1f} W")
         
     
     def set_pid(self, kp, ki, kd, target):
@@ -107,10 +107,16 @@ class Heating(Fase):
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
+                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      )
                 else:
                     self.ctx.ssr_res.turn_off()
-                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
+                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      )
                     print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
                     self.step_end_time = time.time()
@@ -129,7 +135,10 @@ class Heating(Fase):
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(),
                                        sys_temp,
-                                       res_power)
+                                       res_power,
+                                       self.ctx.pzem.getVoltage(),
+                                       self.ctx.pzem.getCurrent()
+                                       )
 
 
 
@@ -165,9 +174,15 @@ class Soaking(Fase):
                 self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
+                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      )
                 else:
-                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
+                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      )
                     self.ctx.ssr_res.turn_off()
                     print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -185,7 +200,10 @@ class Soaking(Fase):
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
                                        sys_temp,
-                                       res_power)
+                                       res_power,
+                                       self.ctx.pzem.getVoltage(),
+                                       self.ctx.pzem.getCurrent()
+                                       )
        
       
       
@@ -222,9 +240,15 @@ class Cooling(Fase):
                 
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
+                    self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
+                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      )
                 else:
-                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp)
+                    self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
+                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      )
                     self.ctx.ssr_res.turn_off()
                     print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -242,4 +266,7 @@ class Cooling(Fase):
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
                                        sys_temp,
-                                       res_power)
+                                       res_power,
+                                       self.ctx.pzem.getVoltage(),
+                                       self.ctx.pzem.getCurrent()
+                                       )

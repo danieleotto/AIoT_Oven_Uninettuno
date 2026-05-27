@@ -3,7 +3,8 @@ from console_menu import TextMenu, ANSI
 from functools import partial
 from customlib.functions import todo_placeholder, get_timestamp, time_convert_str, clear_console
 from customlib.exceptions import ErroreTimeout, ErroreTemperatura, ErroreSonda
-from fasi import Context, Heating, Soaking, Cooling
+from fasi import Heating, Soaking, Cooling
+from context import Context
 
 
 def clear_values(params:dict, menu:TextMenu) -> None:
