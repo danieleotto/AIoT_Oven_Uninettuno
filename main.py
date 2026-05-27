@@ -5,8 +5,7 @@ from ss_relay import SolidStateRelay
 from console_menu import TextMenu, ANSI
 from processi import Essicatura, Ricottura, SaldaturaSMD
 from temp_sensor import TempSensor
-from fasi import Context
-#from dht22 import DHT22
+from context import Context
 #from PZEM004Tlib import PZEM004T
 #from PZEM004TModbuslib import PZEM004TModbus #alternativa da controllare
 
@@ -18,8 +17,8 @@ DEFAULT_CONFIG = {
   "TC_PIN_DO": 5,
   "RES_SSR_PIN": 2,
   "FAN_SSR_PIN": 3,
-  "DHT22_PIN": 4,
-  "PZEM_port": "/dev/ttyUSB0",
+  "DHT22_PIN": 10,
+  "PZEM_port": "/dev/ttyS1",
   "PZEM_timeout": 10,
   "db_filename": "ovenDB.db",
   "sample_interval": 0.2
@@ -45,19 +44,19 @@ TC_CS_PIN:int = config_data["TC_PIN_CS"]
 TC_DO_PIN:int = config_data["TC_PIN_DO"]
 RES_SSR_PIN:int = config_data["RES_SSR_PIN"]
 FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
-#DHT22_PIN:int = config_data["DHT22_PIN"]
+DHT22_PIN:int = config_data["DHT22_PIN"]
 sample_size:int = config_data["avg_sample_size"]
 sampling_interval:float = config_data["sample_interval"]
 
 tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN,sample_size)
 sq:SQLiteDB = SQLiteDB(config_data["db_filename"])
-#dht22:TempSensor = TempSensor(DHT22_PIN)
+dht22:TempSensor = TempSensor(DHT22_PIN)
 #pzem:PZEM004T = PZEM004T(config_data["PZEM_port"], config_data["PZEM_timeout"])
 #pzem2:PZEM004TModbus = PZEM004TModbus() #aternativa da controllare
 ssr_res:SolidStateRelay = SolidStateRelay(RES_SSR_PIN)
 ssr_fan:SolidStateRelay = SolidStateRelay(FAN_SSR_PIN)
 
-ctx:Context = Context(tc, sampling_interval, sq, ssr_res, ssr_fan)
+ctx:Context = Context(tc, sampling_interval, sq, ssr_res, ssr_fan, dht22)
 
 e_proc:Essicatura = Essicatura(ctx)
 r_proc:Ricottura = Ricottura(ctx)

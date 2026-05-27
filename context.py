@@ -2,6 +2,7 @@ from thermocouple import Termocoppia
 from sqlite_db import SQLiteDB
 from ss_relay import SolidStateRelay
 from temp_sensor import TempSensor
+from customlib.pzem004t_lib import PZEM004T
 
 
 class Context:
@@ -12,8 +13,8 @@ class Context:
         database:SQLiteDB,
         ssr_resistance:SolidStateRelay,
         ssr_ovenfan:SolidStateRelay,
-        dht22:TempSensor = None,
-        pzem = None
+        dht22:TempSensor | None = None,
+        pzem:PZEM004T | None = None
     ) -> None:
         #TODO pzem sensor type
         self.tc = thermocouple

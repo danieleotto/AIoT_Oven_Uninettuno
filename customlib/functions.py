@@ -36,9 +36,9 @@ def time_convert_str(timesec:float | None, ms:bool = False) -> str | None:
         parts.append(f"{hours:.0f} [h]")
     if minutes > 0:
         parts.append(f"{minutes:.0f} [m]")
-    if seconds > 0 and ms == False:
+    if seconds > 0 and not ms:
         parts.append(f"{seconds:.0f} [s]")
-    else:
+    elif seconds > 0 and ms:
         parts.append(f"{seconds:.3f} [s]")
     return " ".join(parts)
 

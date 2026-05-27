@@ -34,7 +34,7 @@ class Fase:
     
     
     def check_temperature(self, elapsed:float, temp:float, target:float) -> None:
-        if target - 10 < temp < target + 10:
+        if target - 10 < temp < target + 10: #TODO aggiornare i limiti temperatura
             pass
         else:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
@@ -90,13 +90,13 @@ class Heating(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 20 #TODO per il momento lasciamo 0.5°C/sec + 20 sec
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 60 #TODO per il momento lasciamo 0.5°C/sec + 60 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
             if delta_time > self.ctx.sampling_interval:
-                sys_temp = 0 #TODO add dht
+                sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
@@ -120,6 +120,7 @@ class Heating(Fase):
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
                                        temp,
+                                       (self.target_temp - temp),
                                        self.pid.kp,
                                        self.pid.ki,
                                        self.pid.kd, 
@@ -127,7 +128,8 @@ class Heating(Fase):
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(),
-                                       sys_temp)
+                                       sys_temp,
+                                       res_power)
 
 
 
@@ -152,7 +154,7 @@ class Soaking(Fase):
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
             if delta_time > self.ctx.sampling_interval:
-                sys_temp = 0 #TODO add dht
+                sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
@@ -174,6 +176,7 @@ class Soaking(Fase):
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
                                        temp,
+                                       (self.target_temp - temp),
                                        self.pid.kp,
                                        self.pid.ki,
                                        self.pid.kd,
@@ -181,7 +184,8 @@ class Soaking(Fase):
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
-                                       sys_temp)
+                                       sys_temp,
+                                       res_power)
        
       
       
@@ -189,7 +193,7 @@ class Cooling(Fase):
     def __init__(self, 
                  name:str, 
                  ctx:Context, 
-                 target_temp:float | None, 
+                 target_temp:float, 
                  target_time:float, 
                  target_temp_rate:float | None, 
                  timeout_limit:float | None = None) -> None:
@@ -207,7 +211,7 @@ class Cooling(Fase):
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
             if delta_time > self.ctx.sampling_interval:
-                sys_temp = 0 #TODO adddht
+                sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
@@ -229,6 +233,7 @@ class Cooling(Fase):
                 self.ctx.sq.add_sample(self.name, 
                                        self.target_temp, 
                                        temp,
+                                       (self.target_temp - temp),
                                        self.pid.kp,
                                        self.pid.ki,
                                        self.pid.kd,
@@ -236,4 +241,5 @@ class Cooling(Fase):
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
-                                       sys_temp)
+                                       sys_temp,
+                                       res_power)

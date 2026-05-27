@@ -28,6 +28,7 @@ class SQLiteDB:
             step TEXT,
             tempTarget REAL,
             tempForno REAL,
+            errore REAL,
             kp REAL,
             ki REAL,
             kd REAL,
@@ -35,7 +36,8 @@ class SQLiteDB:
             tempRate REAL,
             ssrRstate BOOLEAN,
             ssrFstate BOOLEAN,
-            sysTemp REAL
+            sysTemp REAL,
+            resPower REAL
         )""")
         self.conn.commit()
 
@@ -44,6 +46,7 @@ class SQLiteDB:
                    step:str, 
                    temp_target:float, 
                    temp_oven:float,
+                   errore:float,
                    kp:float,
                    ki:float,
                    kd:float, 
@@ -51,11 +54,12 @@ class SQLiteDB:
                    temp_rate:float, 
                    ssr_res_state:bool, 
                    ssr_fan_state:bool, 
-                   sys_temp:float) -> None:
+                   sys_temp:float,
+                   res_power:float) -> None:
         idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
-            "INSERT INTO campioni (idproc, step, tempTarget, tempForno, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            (idproc, step, temp_target, temp_oven, kp, ki, kd, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp)
+            "INSERT INTO campioni (idproc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resPower) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (idproc, step, temp_target, temp_oven, errore, kp, ki, kd, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp, res_power)
         )
         self.conn.commit()
 
@@ -109,7 +113,7 @@ class SQLiteDB:
 
             with open(LOG_FILENAME, "a", encoding="utf-8") as file:
                 if file.tell() == 0:
-                    file.write("id, idProc, step, tempTarget, tempForno, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp\n")
+                    file.write("id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resPower\n")
                 for sample in sample_list:
                     text_line = ",".join(str(value) for value in sample)
                     file.write(text_line + "\n")

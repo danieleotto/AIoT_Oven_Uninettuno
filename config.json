@@ -7,7 +7,7 @@
   "FAN_SSR_PIN": 3,
   "DHT22_PIN": 10,
   "PZEM_port": "/dev/ttyUSB0",
-  "PZEM_timeout": 5,
+  "PZEM_timeout": 0.3,
   "db_filename": "ovenDB.db",
   "sample_interval": 0.2
 }
