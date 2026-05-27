@@ -9,6 +9,9 @@
   "PZEM_port": "/dev/ttyUSB0",
   "PZEM_timeout": 0.3,
   "PZEM_address": 248,
-  "db_filename": "ovenDB.db",
-  "sample_interval": 0.2
+  "db_filename": "ovenDB_test.db",
+  "sample_interval": 0.2,
+  "kp": 2,
+  "ki": 0.5,
+  "kd": 1
 }

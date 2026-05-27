@@ -14,7 +14,8 @@ class Context:
         ssr_resistance:SolidStateRelay,
         ssr_ovenfan:SolidStateRelay,
         dht22:TempSensor,
-        pzem:PZEM004TModbus
+        pzem:PZEM004TModbus,
+        pid_values:tuple[float, float, float]
     ) -> None:
         #TODO pzem sensor type
         self.tc = thermocouple
@@ -24,3 +25,4 @@ class Context:
         self.ssr_fan = ssr_ovenfan
         self.dht22 = dht22
         self.pzem = pzem
+        self.pid_values = pid_values

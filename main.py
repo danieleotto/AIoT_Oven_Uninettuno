@@ -21,7 +21,10 @@ DEFAULT_CONFIG = {
     "PZEM_timeout": 0.3,
     "PZEM_address": 248,
     "db_filename": "ovenDB.db",
-    "sample_interval": 0.2
+    "sample_interval": 0.2,
+    "kp": 2,
+    "ki": 0.5,
+    "kd": 1
 }
 config_loaded:bool = False
 
@@ -47,15 +50,16 @@ FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
 DHT22_PIN:int = config_data["DHT22_PIN"]
 sample_size:int = config_data["avg_sample_size"]
 sampling_interval:float = config_data["sample_interval"]
+pid_values:tuple[float, float, float] = (config_data["kp"], config_data["ki"], config_data["kd"])
 
 tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN,sample_size)
 sq:SQLiteDB = SQLiteDB(config_data["db_filename"])
 dht22:TempSensor = TempSensor(DHT22_PIN)
-pzem:PZEM004TModbus = PZEM004TModbus(config_data["PZEM_port"], config_data["PZEM_timeout"], config_data["PZEM_address"]) #aternativa da controllare
+pzem:PZEM004TModbus = PZEM004TModbus(config_data["PZEM_port"], config_data["PZEM_timeout"], config_data["PZEM_address"])
 ssr_res:SolidStateRelay = SolidStateRelay(RES_SSR_PIN)
 ssr_fan:SolidStateRelay = SolidStateRelay(FAN_SSR_PIN)
 
-ctx:Context = Context(tc, sampling_interval, sq, ssr_res, ssr_fan, dht22, pzem)
+ctx:Context = Context(tc, sampling_interval, sq, ssr_res, ssr_fan, dht22, pzem, pid_values)
 
 e_proc:Essicatura = Essicatura(ctx)
 r_proc:Ricottura = Ricottura(ctx)
