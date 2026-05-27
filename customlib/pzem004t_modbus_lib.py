@@ -2,9 +2,10 @@ from pymodbus.client import ModbusSerialClient
 
 
 class PZEM004TModbus:
-    def __init__(self, port:str = "/dev/ttyUSB0",timeout = 1):
+    def __init__(self, port:str = "/dev/ttyUSB0",timeout:float = 0.3, dev_id:int = 248):
         self.port = port
         self.timeout = timeout
+        self.dev_id = dev_id
         self.client = ModbusSerialClient(
             port=self.port,
             baudrate=9600,
@@ -13,11 +14,15 @@ class PZEM004TModbus:
             bytesize=8,
             timeout=self.timeout
         )
+        try:
+            self.client.close()
+        except:
+            pass
         self.client.connect()
                
 
     def readAll(self):
-        result = self.client.read_input_registers(address=0xF8, count=10, device_id=1)
+        result = self.client.read_input_registers(address=0, count=10, device_id=self.dev_id)
         if result.isError():
             raise Exception("Errore Modbus")
         
@@ -60,3 +65,10 @@ class PZEM004TModbus:
 
     def getAlarm(self):
         return self.readAll()['alarm']
+
+    def __del__(self):
+        try:
+            if self.client:
+                self.client.close()
+        except:
+            pass
