@@ -87,19 +87,6 @@ def dht22_test(dht:TempSensor, sampling_time:float) -> str:
         return "MAIN_MENU"
 
 
-def pzem_test(sensor:PZEM004T, sampling_time:float) -> str:
-    #TODO change sensor type
-    print("Test sensore PZEM004T.\nCTRL+C per terminare.")
-    try:
-        while True:
-            (voltage, current, power, reg_power) = sensor.read_all()
-            print(f"Voltage: {voltage}, Current: {current}, Power: {power}, RegPower: {reg_power}")
-            time.sleep(sampling_time)
-    except KeyboardInterrupt:
-        input("\nTerminato. Premere un tasto per continuare...")
-        return "MAIN MENU"
-
-
 def pzem_test(sensor:PZEM004TModbus, sampling_time:float) -> str:
     print("Test sensore PZEM004T Modbus.\nCTRL+C per terminare.")
     try:
