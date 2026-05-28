@@ -17,7 +17,6 @@ class Context:
         pzem:PZEM004TModbus,
         pid_values:dict[str, float]
     ) -> None:
-        #TODO pzem sensor type
         self.tc = thermocouple
         self.sampling_interval = sanpling_interval
         self.sq = database

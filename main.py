@@ -6,7 +6,7 @@ from console_menu import TextMenu, ANSI
 from processi import Essicatura, Ricottura, SaldaturaSMD
 from temp_sensor import TempSensor
 from context import Context
-from customlib.pzem004t_modbus_lib import PZEM004TModbus #alternativa da controllare
+from customlib.pzem004t_modbus_lib import PZEM004TModbus
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
