@@ -7,6 +7,7 @@ from processi import Essicatura, Ricottura, SaldaturaSMD
 from temp_sensor import TempSensor
 from context import Context
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
+from customlib.sgp30 import SGP30
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
@@ -17,9 +18,10 @@ DEFAULT_CONFIG = {
     "RES_SSR_PIN": 2,
     "FAN_SSR_PIN": 3,
     "DHT22_PIN": 10,
-    "PZEM_port": "/dev/ttyUSB",
+    "PZEM_port": "/dev/ttyUSB0",
     "PZEM_timeout": 0.3,
     "PZEM_address": 248,
+    "i2c_bus_id": 2,
     "db_filename": "ovenDB.db",
     "sample_interval": 0.2,
     "kp": 2,
@@ -48,18 +50,24 @@ TC_DO_PIN:int = config_data["TC_PIN_DO"]
 RES_SSR_PIN:int = config_data["RES_SSR_PIN"]
 FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
 DHT22_PIN:int = config_data["DHT22_PIN"]
-sample_size:int = config_data["avg_sample_size"]
-sampling_interval:float = config_data["sample_interval"]
+I2C_BUS_ID:int = config_data["i2c_bus_id"]
+PZEM_PORT:str = config_data["PZEM_port"]
+PZEM_TIMEOUT:float = config_data["PZEM_timeout"]
+PZEM_ADDRESS:int = config_data["PZEM_address"]
+SAMPLE_SIZE:int = config_data["avg_sample_size"]
+SAMPLING_INTERVAL:float = config_data["sample_interval"]
+DB_FILENAME:str = config_data["db_filename"]
 pid_values:dict[str, float] = {"kp": config_data["kp"], "ki": config_data["ki"], "kd": config_data["kd"]}
 
-tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN,sample_size)
-sq:SQLiteDB = SQLiteDB(config_data["db_filename"])
+tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE)
+sq:SQLiteDB = SQLiteDB(DB_FILENAME)
 dht22:TempSensor = TempSensor(DHT22_PIN)
-pzem:PZEM004TModbus = PZEM004TModbus(config_data["PZEM_port"], config_data["PZEM_timeout"], config_data["PZEM_address"])
+pzem:PZEM004TModbus = PZEM004TModbus(PZEM_PORT, PZEM_TIMEOUT, PZEM_ADDRESS)
+sgp:SGP30 = SGP30(I2C_BUS_ID)
 ssr_res:SolidStateRelay = SolidStateRelay(RES_SSR_PIN)
 ssr_fan:SolidStateRelay = SolidStateRelay(FAN_SSR_PIN)
 
-ctx:Context = Context(tc, sampling_interval, sq, ssr_res, ssr_fan, dht22, pzem, pid_values)
+ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid_values)
 
 e_proc:Essicatura = Essicatura(ctx)
 r_proc:Ricottura = Ricottura(ctx)

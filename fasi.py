@@ -88,7 +88,7 @@ class Heating(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 90 #TODO per il momento lasciamo 0.5°C/sec + 90 sec
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 120 #TODO per il momento lasciamo 0.5°C/sec + 120 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
@@ -96,6 +96,7 @@ class Heating(Fase):
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
+                eco2, tvoc = self.ctx.sgp.read()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
@@ -135,8 +136,10 @@ class Heating(Fase):
                                        sys_temp,
                                        res_power,
                                        self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent()
-                                       )
+                                       self.ctx.pzem.getCurrent(),
+                                       self.ctx.pzem.getPower(),
+                                       eco2,
+                                       tvoc)
 
 
 
@@ -164,6 +167,7 @@ class Soaking(Fase):
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
+                eco2, tvoc = self.ctx.sgp.read()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
@@ -201,8 +205,10 @@ class Soaking(Fase):
                                        sys_temp,
                                        res_power,
                                        self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent()
-                                       )
+                                       self.ctx.pzem.getCurrent(),
+                                       self.ctx.pzem.getPower(),
+                                       eco2,
+                                       tvoc)
        
       
       
@@ -231,6 +237,7 @@ class Cooling(Fase):
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
+                eco2, tvoc = self.ctx.sgp.read()
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
@@ -268,5 +275,7 @@ class Cooling(Fase):
                                        sys_temp,
                                        res_power,
                                        self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent()
-                                       )
+                                       self.ctx.pzem.getCurrent(),
+                                       self.ctx.pzem.getPower(),
+                                       eco2,
+                                       tvoc)
