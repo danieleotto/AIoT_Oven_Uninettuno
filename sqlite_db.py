@@ -122,8 +122,7 @@ class SQLiteDB:
 
             with open(LOG_FILENAME, "a", encoding="utf-8") as file:
                 if file.tell() == 0:
-                    file.write("""id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime,
-                    tempRate, ssrRstate, ssrFstate, sysTemp, resPower, voltage, current\n""")
+                    file.write("""id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resPower, voltage, current\n""")
                 for sample in sample_list:
                     text_line = ",".join(str(value) for value in sample)
                     file.write(text_line + "\n")
