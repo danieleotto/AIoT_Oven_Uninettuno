@@ -4,7 +4,8 @@ from console_menu import TextMenu, ANSI
 from functools import partial
 from temp_sensor import TempSensor
 from customlib.exceptions import ErroreSonda
-from customlib.pzem004t_modbus_lib import PZEM004TModbus #funziona solo con PZEM v3
+from customlib.pzem004t_modbus_lib import PZEM004TModbus
+from customlib.sgp30 import SGP30
 import json, time, sys, os
 
 
@@ -188,26 +189,49 @@ def ssr_state(is_on:bool, ssr_r:SolidStateRelay ,ssr_f:SolidStateRelay) -> str:
     input("Premere un tasto per continuare...")
     return "MAIN_MENU"
 
+
+def sgp_test(sgp:SGP30, sampling:float):
+    print("Attesa 15 secondi per stabilizzazione")
+    for i in range(1,16):
+        print("*" * i)
+        time.sleep(1)
+        sys.stdout.write("\033[F\033[K")
+    try:
+        while True:
+            eco2, tvoc = sgp.read()
+            if eco2 is not None and tvoc is not None:
+                print(f"eCO2: {eco2} ppm | TOC: {tvoc} ppb")
+            else:
+                print("Errore CRC nella lettura")
+            time.sleep(sampling)
+    except KeyboardInterrupt:
+        input("\nTerminato. Premere un tasto per continuare...")
+        return "MAIN_MENU"
        
-            
+
+
+
 with open("config.json") as config_file:
     config_data = json.load(config_file)
     
-TC_SCK = config_data["TC_PIN_SCK"]
-TC_CS = config_data["TC_PIN_CS"]
-TC_DO = config_data["TC_PIN_DO"]
-RES_SSR_PIN = config_data["RES_SSR_PIN"]
-FAN_SSR_PIN = config_data["FAN_SSR_PIN"]
-DHT22_PIN = config_data["DHT22_PIN"]
-interval = config_data["sample_interval"]
-sample_size = config_data["avg_sample_size"]
-sampling = config_data["sample_interval"]
+TC_SCK:int = config_data["TC_PIN_SCK"]
+TC_CS:int = config_data["TC_PIN_CS"]
+TC_DO:int = config_data["TC_PIN_DO"]
+RES_SSR_PIN:int = config_data["RES_SSR_PIN"]
+FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
+DHT22_PIN:int = config_data["DHT22_PIN"]
+sample_size:int = config_data["avg_sample_size"]
+sampling:float = config_data["sample_interval"]
+PZEM_PORT:str = config_data["PZEM_port"]
+PZEM_TIMEOUT:float = config_data["PZEM_timeout"]
+I2C_BUS_ID:int = config_data["i2c_bus_id"]
 
 tc = Termocoppia(TC_SCK,TC_CS,TC_DO, sample_size)
 dht22 = TempSensor(DHT22_PIN)
 ssr_res = SolidStateRelay(RES_SSR_PIN)
 ssr_fan = SolidStateRelay(FAN_SSR_PIN)
-pzem = PZEM004TModbus(config_data["PZEM_port"], config_data["PZEM_timeout"]) #alternativa da controllare
+pzem = PZEM004TModbus(PZEM_PORT, PZEM_TIMEOUT)
+sgp = SGP30(I2C_BUS_ID)
 
 m = TextMenu("Menu principale",ANSI.CYAN, ANSI.WHITE)
 m.add_option("1","Test Termocoppia", partial(tc_test, sampling))
@@ -215,9 +239,10 @@ m.add_option("2","SSR Resistenze", partial(ssr_test, ssr_res, "Resistenze"))
 m.add_option("3","SSR Ventola", partial(ssr_test, ssr_fan, "Ventola"))
 m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))
 m.add_option("5","Sensore PZEM004T Modbus", partial(pzem_test, pzem, sampling))
-m.add_option("6","Test Ciclo Riscaldamento", partial(cycle_test, sampling, ssr_res))
-m.add_option("7","Forza tutti SSR on", partial(ssr_state, True, ssr_res, ssr_fan))
-m.add_option("8","Forza tutti SSR off", partial(ssr_state, False, ssr_res, ssr_fan))
+m.add_option("6","Sensore SGP30", partial(sgp_test, sgp, sampling))
+m.add_option("7","Test Ciclo Riscaldamento", partial(cycle_test, sampling, ssr_res))
+m.add_option("8","Forza tutti SSR on", partial(ssr_state, True, ssr_res, ssr_fan))
+m.add_option("9","Forza tutti SSR off", partial(ssr_state, False, ssr_res, ssr_fan))
 
 if __name__ == '__main__':
     m.run()

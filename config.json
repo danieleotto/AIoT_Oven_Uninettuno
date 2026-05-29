@@ -9,6 +9,7 @@
   "PZEM_port": "/dev/ttyUSB0",
   "PZEM_timeout": 0.3,
   "PZEM_address": 248,
+  "i2c_bus_id": 2,
   "db_filename": "ovenDB_test.db",
   "sample_interval": 0.2,
   "kp": 2.5,
