@@ -174,7 +174,7 @@ class Soaking(Fase):
                 
                 res_power = self.ctx.pid.calcola_output(temp)
                 
-                self.check_temperature(elapsed_time, temp, self.target_temp)
+                #self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
                     self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
