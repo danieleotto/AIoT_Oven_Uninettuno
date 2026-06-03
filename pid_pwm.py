@@ -107,7 +107,7 @@ class PWM:
         self.start_time = time.time()
         
     
-    def set_pid_output(self, power:float) -> None:
+    def update(self, power:float) -> None:
         self.duty_cycle = max(0.0, min(1.0, power))
         adesso = time.time()
         t = (adesso - self.start_time) % self.periodo

@@ -84,13 +84,15 @@ class Heating(Fase):
         self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
-        last_time:float = 0.0  
+        last_time:float = 0.0
+        res_power:float = 0.0
         if self.timeout_limit is None:
             self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 240 #TODO per il momento lasciamo 0.5°C/sec + 240 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
+            self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
@@ -99,7 +101,6 @@ class Heating(Fase):
                 temp_rate = delta_temp / delta_time
                 
                 res_power = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
-                self.pwm_heat.set_pid_output(res_power)
             
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
@@ -158,10 +159,12 @@ class Soaking(Fase):
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
+        res_power:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
+            self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
@@ -170,7 +173,6 @@ class Soaking(Fase):
                 temp_rate = delta_temp / delta_time
                 
                 res_power = self.ctx.pid.calcola_output(temp)
-                self.pwm_heat.set_pid_output(res_power)
                 
                 self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
@@ -228,10 +230,12 @@ class Cooling(Fase):
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
+        res_power:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time:float = elapsed_time - last_time
+            self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
@@ -240,7 +244,6 @@ class Cooling(Fase):
                 temp_rate = delta_temp / delta_time
                 
                 res_power = self.ctx.pid.calcola_output_limitato_down(temp, temp_rate, self.target_temp_rate)
-                self.pwm_heat.set_pid_output(res_power)
                 #TODO ventola?
                 
                 if elapsed_time < self.target_time:
