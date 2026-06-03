@@ -81,7 +81,10 @@ def dht22_test(dht:TempSensor, sampling_time:float) -> str:
         while True:
             temp = dht.get_temperature()
             hum = dht.get_humidity()
-            print(f"Lettura DHT22: Temperatura {temp:.1f}°C | Umidità {hum:.1f}.")
+            if temp is not None and hum is not None:
+                print(f"Lettura DHT22: Temperatura {temp:.1f}°C | Umidità {hum:.1f}.")
+            else:
+                print("Temperatura o umidità con valore: None")
             time.sleep(sampling_time)
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare...")
