@@ -3,7 +3,7 @@ from customlib.functions import time_convert_str
 from console_menu import ANSI
 from customlib.exceptions import ErroreTemperatura, ErroreTimeout
 from context import Context
-from pid_pwm import PID, PWM
+from pid_pwm import PWM
 
 
 class Fase:
@@ -23,7 +23,6 @@ class Fase:
         self.is_done:bool = False
         self.step_start_time:float = 0.0
         self.step_end_time:float = 0.0
-        self.pid:PID = PID() #inizializziamo nella sottoclasse
         self.pwm_heat:PWM = PWM(self.ctx.ssr_res, frequenza=1.0) #1Hz
         self.pwm_cool:PWM = PWM(self.ctx.ssr_fan, frequenza=1.0) #1Hz
         
@@ -82,13 +81,12 @@ class Heating(Fase):
 
 
     def run(self):
-        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
-        self.pid.set_pid_target(self.target_temp)
+        self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0  
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 120 #TODO per il momento lasciamo 0.5°C/sec + 120 sec
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 240 #TODO per il momento lasciamo 0.5°C/sec + 240 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
@@ -100,7 +98,7 @@ class Heating(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
+                res_power = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
                 self.pwm_heat.set_pid_output(res_power)
             
                 if temp < self.target_temp:
@@ -126,9 +124,9 @@ class Heating(Fase):
                                        self.target_temp, 
                                        temp,
                                        (self.target_temp - temp),
-                                       self.pid.kp,
-                                       self.pid.ki,
-                                       self.pid.kd, 
+                                       self.ctx.pid.kp,
+                                       self.ctx.pid.ki,
+                                       self.ctx.pid.kd, 
                                        elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
@@ -140,6 +138,7 @@ class Heating(Fase):
                                        self.ctx.pzem.getPower(),
                                        eco2,
                                        tvoc)
+
 
 
 
@@ -155,8 +154,7 @@ class Soaking(Fase):
     
     
     def run(self):
-        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
-        self.pid.set_pid_target(self.target_temp)
+        self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
@@ -171,7 +169,7 @@ class Soaking(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.pid.calcola_output(temp)
+                res_power = self.ctx.pid.calcola_output(temp)
                 self.pwm_heat.set_pid_output(res_power)
                 
                 self.check_temperature(elapsed_time, temp, self.target_temp)
@@ -195,9 +193,9 @@ class Soaking(Fase):
                                        self.target_temp, 
                                        temp,
                                        (self.target_temp - temp),
-                                       self.pid.kp,
-                                       self.pid.ki,
-                                       self.pid.kd,
+                                       self.ctx.pid.kp,
+                                       self.ctx.pid.ki,
+                                       self.ctx.pid.kd,
                                        elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
@@ -210,6 +208,7 @@ class Soaking(Fase):
                                        eco2,
                                        tvoc)
        
+      
       
       
 class Cooling(Fase):
@@ -225,8 +224,7 @@ class Cooling(Fase):
         
     
     def run(self):
-        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
-        self.pid.set_pid_target(self.target_temp)
+        self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
@@ -241,7 +239,7 @@ class Cooling(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.pid.calcola_output_limitato_down(temp, temp_rate, self.target_temp_rate)
+                res_power = self.ctx.pid.calcola_output_limitato_down(temp, temp_rate, self.target_temp_rate)
                 self.pwm_heat.set_pid_output(res_power)
                 #TODO ventola?
                 
@@ -265,9 +263,9 @@ class Cooling(Fase):
                                        self.target_temp, 
                                        temp,
                                        (self.target_temp - temp),
-                                       self.pid.kp,
-                                       self.pid.ki,
-                                       self.pid.kd,
+                                       self.ctx.pid.kp,
+                                       self.ctx.pid.ki,
+                                       self.ctx.pid.kd,
                                        elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 

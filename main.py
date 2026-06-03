@@ -8,6 +8,7 @@ from temp_sensor import TempSensor
 from context import Context
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
+from pid_pwm import PID
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
@@ -25,8 +26,8 @@ DEFAULT_CONFIG = {
     "db_filename": "ovenDB.db",
     "sample_interval": 0.2,
     "kp": 2,
-    "ki": 0.5,
-    "kd": 1
+    "ki": 0,
+    "kd": 0
 }
 config_loaded:bool = False
 
@@ -57,7 +58,10 @@ PZEM_ADDRESS:int = config_data["PZEM_address"]
 SAMPLE_SIZE:int = config_data["avg_sample_size"]
 SAMPLING_INTERVAL:float = config_data["sample_interval"]
 DB_FILENAME:str = config_data["db_filename"]
-pid_values:dict[str, float] = {"kp": config_data["kp"], "ki": config_data["ki"], "kd": config_data["kd"]}
+KP:float = config_data["kp"]
+KI:float = config_data["ki"]
+KD:float = config_data["kd"]
+
 
 tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE)
 sq:SQLiteDB = SQLiteDB(DB_FILENAME)
@@ -66,8 +70,9 @@ pzem:PZEM004TModbus = PZEM004TModbus(PZEM_PORT, PZEM_TIMEOUT, PZEM_ADDRESS)
 sgp:SGP30 = SGP30(I2C_BUS_ID)
 ssr_res:SolidStateRelay = SolidStateRelay(RES_SSR_PIN)
 ssr_fan:SolidStateRelay = SolidStateRelay(FAN_SSR_PIN)
+pid:PID = PID(KP, KI, KD) #creiamo l'oggetto con kp-ki-kd standard da config.json, temp target verrà impostata all'interno delle fasi
 
-ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid_values)
+ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid)
 
 e_proc:Essicatura = Essicatura(ctx)
 r_proc:Ricottura = Ricottura(ctx)

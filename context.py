@@ -4,6 +4,7 @@ from ss_relay import SolidStateRelay
 from temp_sensor import TempSensor
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
+from pid_pwm import PID
 
 
 class Context:
@@ -17,7 +18,7 @@ class Context:
         dht22:TempSensor,
         pzem:PZEM004TModbus,
         sgp:SGP30,
-        pid_values:dict[str, float]
+        pid:PID
     ) -> None:
         self.tc = thermocouple
         self.sampling_interval = sanpling_interval
@@ -27,4 +28,4 @@ class Context:
         self.dht22 = dht22
         self.pzem = pzem
         self.sgp = sgp
-        self.pid_values = pid_values
+        self.pid = pid

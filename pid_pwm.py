@@ -104,13 +104,13 @@ class PWM:
         self.ssr = ssr
         self.periodo = 1 / frequenza
         self.duty_cycle = 0.0 #deve essere tra 0 e 1
-        self.last_time = time.time()
+        self.start_time = time.time()
         
     
     def set_pid_output(self, power:float) -> None:
         self.duty_cycle = max(0.0, min(1.0, power))
         adesso = time.time()
-        t = (adesso - self.last_time) % self.periodo
+        t = (adesso - self.start_time) % self.periodo
         tempo_accensione = self.periodo * self.duty_cycle
 
         if t < tempo_accensione:
