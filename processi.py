@@ -137,7 +137,7 @@ class Essicatura:
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
-            print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
+            print(f"- La temperatura rilevata eccede i 25 gradi di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
@@ -255,7 +255,7 @@ class Ricottura:
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
-            print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
+            print(f"- La temperatura rilevata eccede i 25 gradi di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
@@ -417,7 +417,7 @@ class SaldaturaSMD:
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
-            print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
+            print(f"- La temperatura rilevata eccede i 25 gradi di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         

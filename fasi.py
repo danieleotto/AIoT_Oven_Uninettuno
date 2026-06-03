@@ -33,7 +33,7 @@ class Fase:
     
     
     def check_temperature(self, elapsed:float, temp:float, target:float) -> None:
-        if target - 10 < temp < target + 10: #TODO aggiornare i limiti temperatura
+        if target - 25 < temp < target + 25: #TODO aggiornare i limiti temperatura
             pass
         else:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
