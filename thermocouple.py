@@ -146,9 +146,9 @@ class Termocoppia:
     
     def read_temp_filtered(self, 
                            max_deviation:float=3.0, 
-                           min_valid:float=10.0, 
+                           min_valid:float=15.0, 
                            max_valid:float=300.0, 
-                           tentativi:int = 5, 
+                           tentativi:int=5, 
                            debug:bool=False) -> float:
         
         for _ in range(tentativi):
@@ -168,17 +168,7 @@ class Termocoppia:
             if debug:
                 print(f"Lettura non valida dopo {tentativi} tentativi: Ultimo dato valido: {self.last_good_sample:.1f}")
             return self.last_good_sample
-        
-        # t = self._read_tc()
-        # if t is None:
-        #     counter = 0
-        #     while t is None:
-        #         t = self._read_tc()
-        #         counter += 1
-        #         if counter > 10:
-        #             raise ErroreSonda
-        # self.buffer.append(t)
-        
+                
         # Se troppi pochi dati ritorna la media semplice
         if len(self.buffer) < 3:
             if debug:
