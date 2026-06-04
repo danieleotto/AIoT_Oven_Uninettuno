@@ -158,12 +158,12 @@ class Termocoppia:
             return t
         
         # Ordina i valori e rimuove il min e il max
-        sorted = sorted(self.buffer)
-        trimmed = sorted[1:-1]
+        sorted_val = sorted(self.buffer)
+        trimmed_val = sorted_val[1:-1]
         
         # Calcolo mediana e filtro i valori oltre la max_deviation dalla mediana
-        median = statistics.median(trimmed)
-        filtered = [v for v in trimmed if abs(v - median) <= max_deviation]
+        median = statistics.median(trimmed_val)
+        filtered = [v for v in trimmed_val if abs(v - median) <= max_deviation]
         
         # Se tutti i valori sono da scartare allora fallback sulla mediana, altrimenti media del restante
         if not filtered:
