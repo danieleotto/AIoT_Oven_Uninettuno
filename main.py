@@ -12,7 +12,7 @@ from pid_pwm import PID
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
-    "avg_sample_size" : 10,
+    "TC_SAMPLE_SIZE" : 10,
     "TC_MAX_TEMP": 200,
     "TC_PIN_SCK": 8,
     "TC_PIN_CS": 7,
@@ -20,15 +20,15 @@ DEFAULT_CONFIG = {
     "RES_SSR_PIN": 2,
     "FAN_SSR_PIN": 3,
     "DHT22_PIN": 10,
-    "PZEM_port": "/dev/ttyUSB0",
-    "PZEM_timeout": 0.3,
-    "PZEM_address": 248,
-    "i2c_bus_id": 2,
-    "db_filename": "ovenDB.db",
-    "sample_interval": 0.2,
-    "kp": 2,
-    "ki": 0,
-    "kd": 0
+    "PZEM_PORT": "/dev/ttyUSB0",
+    "PZEM_TIMEOUT": 0.3,
+    "PZEM_ADDRESS": 248,
+    "I2C_BUS_ID": 2,
+    "DB_FILENAME": "ovenDB.db",
+    "SAMPLE_INTERVAL": 0.2,
+    "KP": 2,
+    "KI": 0,
+    "KD": 0
 }
 config_loaded:bool = False
 
@@ -53,16 +53,16 @@ TC_DO_PIN:int = config_data["TC_PIN_DO"]
 RES_SSR_PIN:int = config_data["RES_SSR_PIN"]
 FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
 DHT22_PIN:int = config_data["DHT22_PIN"]
-I2C_BUS_ID:int = config_data["i2c_bus_id"]
-PZEM_PORT:str = config_data["PZEM_port"]
-PZEM_TIMEOUT:float = config_data["PZEM_timeout"]
-PZEM_ADDRESS:int = config_data["PZEM_address"]
-SAMPLE_SIZE:int = config_data["avg_sample_size"]
-SAMPLING_INTERVAL:float = config_data["sample_interval"]
-DB_FILENAME:str = config_data["db_filename"]
-KP:float = config_data["kp"]
-KI:float = config_data["ki"]
-KD:float = config_data["kd"]
+I2C_BUS_ID:int = config_data["I2C_BUS_ID"]
+PZEM_PORT:str = config_data["PZEM_PORT"]
+PZEM_TIMEOUT:float = config_data["PZEM_TIMEOUT"]
+PZEM_ADDRESS:int = config_data["PZEM_ADDRESS"]
+SAMPLE_SIZE:int = config_data["TC_SAMPLE_SIZE"]
+SAMPLING_INTERVAL:float = config_data["SAMPLE_INTERVAL"]
+DB_FILENAME:str = config_data["DB_FILENAME"]
+KP:float = config_data["KP"]
+KI:float = config_data["KI"]
+KD:float = config_data["KD"]
 
 
 tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE, TC_MAX_TEMP)
