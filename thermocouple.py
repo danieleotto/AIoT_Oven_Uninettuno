@@ -29,6 +29,7 @@ class Termocoppia:
         self.sample_size = sample_size
         self.tc_max_temp = tc_max_temp
         self.buffer = deque(maxlen=self.sample_size)
+        self.last_good_sample:float = -100.0
 
         wp.wiringPiSetup()
         wp.pinMode(self.PIN_SCK, GPIO.OUTPUT)
@@ -76,6 +77,7 @@ class Termocoppia:
     
     def _inizializza(self, sampling_interval:float, debug:bool = False) -> float | None:
         self.buffer.clear()
+        self.last_good_sample = -100.0
         print(f"Inizializzazione sonda.\nEseguo {self.sample_size} letture con intervallo {sampling_interval:.1f} s.\n\n")
         if debug:
             print(f"{debug_buffer_print(self.buffer)}")
@@ -84,7 +86,7 @@ class Termocoppia:
         tentativi = 1
         while len(self.buffer) != self.sample_size:
             # t = self.read_temp_average()
-            t = self.read_temp_average()
+            t = self.read_temp_filtered()
             counter += 1
             time.sleep(sampling_interval)
             sys.stdout.write("\033[F\033[K")
@@ -142,16 +144,30 @@ class Termocoppia:
             return temp
         
     
-    def read_temp_filtered(self, max_deviation:float=3.0, min_valid:float=10.0, max_valid:float=300.0, debug:bool=False) -> float:
+    def read_temp_filtered(self, 
+                           max_deviation:float=3.0, 
+                           min_valid:float=10.0, 
+                           max_valid:float=300.0, 
+                           tentativi:int = 5, 
+                           debug:bool=False) -> float:
         
-        while True:
+        for _ in range(tentativi):
             t = self._read_tc()
+            
             if t is None:
                 continue
-            if not (min_valid < float(t) < max_valid):
+            
+            if not (min_valid <= t <= max_valid):
                 continue
+            
+            t = float(t)
             self.buffer.append(t)
+            self.last_good_sample = t
             break
+        else:
+            if debug:
+                print(f"Lettura non valida dopo {tentativi} tentativi: Ultimo dato valido: {self.last_good_sample:.1f}")
+            return self.last_good_sample
         
         # t = self._read_tc()
         # if t is None:
