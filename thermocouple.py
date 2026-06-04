@@ -84,7 +84,7 @@ class Termocoppia:
         tentativi = 1
         while len(self.buffer) != self.sample_size:
             # t = self.read_temp_average()
-            t = self.read_temp_filtered()
+            t = self.read_temp_average()
             counter += 1
             time.sleep(sampling_interval)
             sys.stdout.write("\033[F\033[K")
