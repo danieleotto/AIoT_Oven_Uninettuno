@@ -1,5 +1,5 @@
 import wiringpi as wp
-import time, sys
+import time, sys, statistics
 from wiringpi import GPIO
 from collections import deque
 from customlib.functions import ask_continue
@@ -140,48 +140,38 @@ class Termocoppia:
             return temp
         
     
-    def read_temp_filtered(self, samples:int=9, delay:float=0.005, debug:bool=False) -> float:
-        readings:list[float] = []
-        while len(readings) <= samples:
-            t = self._read_tc()
-            if t is not None:
-                readings.append(t)
-            time.sleep(delay)
-        readings.sort()
-        filtered_readings = readings[1:-1]
-        avg_temp = sum(filtered_readings) / len(filtered_readings)
-        if debug:
-            print(f"Readings: {readings} | Filtered: {filtered_readings} | AVERAGE: {avg_temp:.1f}")
-        return avg_temp
-    
-    
-    def read_temp_filtered_median(self, samples:int=9, delay:float=0.005, max_deviation:float=3.0, debug:bool=False):
-        readings:list[float] = []
-        while len(readings) <= samples:
-            t = self._read_tc()
-            if t is not None:
-                readings.append(t)
-            time.sleep(delay)
+    def read_temp_filtered(self, max_deviation:float=3.0, debug:bool=False) -> float:
+        t = self._read_tc()
+        if t is None:
+            counter = 0
+            while t is None:
+                t = self._read_tc()
+                counter += 1
+                if counter > 10:
+                    raise ErroreSonda
+        self.buffer.append(t)
         
-        #Calcolo mediana
-        readings_sorted = sorted(readings)
-        mid = len(readings_sorted) // 2
-        if len(readings_sorted) % 2 == 1:
-            median = readings_sorted[mid]
-        else:
-            median = (readings_sorted[mid-1] + readings_sorted[mid+1]) / 2
-            
-        #Elimino outlier
-        filtered_readings = [r for r in readings if abs(r - median) <= max_deviation]
-        
-        #Fallback alla mediana se sono tutti troppo variabili
-        if not filtered_readings:
+        # Se troppi pochi dati ritorna il dato grezzo
+        if len(self.buffer) < 3:
             if debug:
-                print(f"Readings: {readings} | No Filtered | MEDIAN: {median:.1f}")
+                print(f"Meno di tre campioni: dato grezzo temperatura: {t:.1f}")
+            return t
+        
+        # Ordina i valori e rimuove il min e il max
+        sorted = sorted(self.buffer)
+        trimmed = sorted[1:-1]
+        
+        # Calcolo mediana e filtro i valori oltre la max_deviation dalla mediana
+        median = statistics.median(trimmed)
+        filtered = [v for v in trimmed if abs(v - median) <= max_deviation]
+        
+        # Se tutti i valori sono da scartare allora fallback sulla mediana, altrimenti media del restante
+        if not filtered:
+            if debug:
+                print(f"Buffer: {debug_buffer_print(self.buffer)}  | MEDIAN: {median:.1f}")
             return median
         
-        avg_temp = sum(filtered_readings) / len(filtered_readings)
+        avg_temp = sum(filtered) / len(filtered)
         if debug:
-            print(f"Readings: {readings} | Filtered: {filtered_readings} | AVERAGE: {avg_temp:.1f}")
-        
+            print(f"Buffer: {debug_buffer_print(self.buffer)}  | AVERAGE: {median:.1f}")
         return avg_temp
