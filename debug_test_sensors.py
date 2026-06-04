@@ -169,7 +169,7 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
             # --- CICLO DI MANTENIMENTO ---
             print("Mantenimento in corso... (S per interrompere)")
             while True:
-                temp = tc.read_temp_average()
+                temp = tc.read_temp_filtered()
                 if temp is None:
                     temp = float(0)
                 print(f"\rTemp attuale: {temp:.1f}°C   (mantenimento)", end="")

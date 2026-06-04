@@ -79,11 +79,12 @@ class Termocoppia:
         print(f"Inizializzazione sonda.\nEseguo {self.sample_size} letture con intervallo {sampling_interval:.1f} s.\n\n")
         if debug:
             print(f"{debug_buffer_print(self.buffer)}")
-        t = None #per evitare che venga ritornato prima di esistere
+        t = None # Per evitare che venga ritornato prima di esistere
         counter = 0
         tentativi = 1
         while len(self.buffer) != self.sample_size:
-            t = self.read_temp_average()
+            # t = self.read_temp_average()
+            t = self.read_temp_filtered()
             counter += 1
             time.sleep(sampling_interval)
             sys.stdout.write("\033[F\033[K")
@@ -133,7 +134,8 @@ class Termocoppia:
 
 
     def read_temp_safe(self) -> float:
-        temp = self.read_temp_average()
+        # temp = self.read_temp_average()
+        temp = self.read_temp_filtered()
         if temp is None:
             raise ErroreSonda
         else:
