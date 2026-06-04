@@ -142,13 +142,11 @@ class Termocoppia:
             return temp
         
     
-    def read_temp_filtered(self, max_deviation:float=3.0, min_valid:float=15.0, max_valid:float=300.0, debug:bool=False) -> float:
+    def read_temp_filtered(self, max_deviation:float=3.0, min_valid:float=10.0, max_valid:float=300.0, debug:bool=False) -> float:
         
         while True:
             t = self._read_tc()
             if t is None:
-                continue
-            if not isinstance(t, (int, float)):
                 continue
             if not (min_valid < float(t) < max_valid):
                 continue
