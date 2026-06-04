@@ -96,7 +96,7 @@ class Termocoppia:
             print(f"{text} {len(self.buffer)}/{self.sample_size} - Tentativo n: {counter}")
             if debug:
                 print(f"Buffer: {debug_buffer_print(self.buffer)}  | LastAVG: {t}")
-            if counter > self.sample_size * tentativi:
+            if counter > self.sample_size * tentativi * 2:
                 tentativi += 1
                 if not ask_continue("Termocoppia non rilevata. Riprovare? [Y/n]: "):
                     return None
@@ -167,7 +167,8 @@ class Termocoppia:
         else:
             if debug:
                 print(f"Lettura non valida dopo {tentativi} tentativi: Ultimo dato valido: {self.last_good_sample:.1f}")
-            return self.last_good_sample
+            # return self.last_good_sample
+            self.buffer.append(self.last_good_sample)
                 
         # Se troppi pochi dati ritorna la media semplice
         if len(self.buffer) < 3:
