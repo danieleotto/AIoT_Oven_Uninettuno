@@ -18,3 +18,8 @@ class ErroreTemperatura(Exception):
 class ErroreSonda(Exception):
     def __init__(self) -> None:
         super().__init__(f"Errore lettura sonda.")
+        
+
+class ErroreMaxTemp(Exception):
+    def __init__(self) -> None:
+        super().__init__(f"Superato limite massimo temperatura.")

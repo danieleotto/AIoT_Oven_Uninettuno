@@ -1,5 +1,6 @@
 {
   "avg_sample_size" : 10,
+  "TC_MAX_TEMP": 200,
   "TC_PIN_SCK": 8,
   "TC_PIN_CS": 7,
   "TC_PIN_DO": 5,

@@ -13,6 +13,7 @@ from pid_pwm import PID
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
     "avg_sample_size" : 10,
+    "TC_MAX_TEMP": 200,
     "TC_PIN_SCK": 8,
     "TC_PIN_CS": 7,
     "TC_PIN_DO": 5,
@@ -45,6 +46,7 @@ while not config_loaded:
             json.dump(DEFAULT_CONFIG, f, indent=4)
         continue
         
+TC_MAX_TEMP:int = config_data["TC_MAX_TEMP"]
 TC_SCK_PIN:int = config_data["TC_PIN_SCK"]
 TC_CS_PIN:int = config_data["TC_PIN_CS"]
 TC_DO_PIN:int = config_data["TC_PIN_DO"]
@@ -63,7 +65,7 @@ KI:float = config_data["ki"]
 KD:float = config_data["kd"]
 
 
-tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE)
+tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE, TC_MAX_TEMP)
 sq:SQLiteDB = SQLiteDB(DB_FILENAME)
 dht22:TempSensor = TempSensor(DHT22_PIN)
 pzem:PZEM004TModbus = PZEM004TModbus(PZEM_PORT, PZEM_TIMEOUT, PZEM_ADDRESS)
