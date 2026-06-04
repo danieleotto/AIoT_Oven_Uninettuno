@@ -103,11 +103,8 @@ class Termocoppia:
         return t
 
     
-    def _is_valid(temp:float | None, min_valid=15.0, max_valid=300.0) -> bool:
-        if temp is None:
-            return False
-        else:
-            return min_valid < temp < max_valid
+    def _is_valid(t:float, min_valid:float=15.0, max_valid:float=300.0) -> bool:
+        return min_valid < t < max_valid
     
 
     def controllo_sonda(self, sampling_interval:float, debug:bool = False) -> float:
@@ -153,7 +150,7 @@ class Termocoppia:
         
         while True:
             t = self._read_tc()
-            if not self._is_valid(t):
+            if not self._is_valid(t) or t is None:
                 continue
             self.buffer.append(t)
             break
