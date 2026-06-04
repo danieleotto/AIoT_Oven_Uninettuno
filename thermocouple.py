@@ -102,6 +102,13 @@ class Termocoppia:
         print("\n")
         return t
 
+    
+    def _is_valid(temp:float | None, min_valid=15.0, max_valid=300.0) -> bool:
+        if temp is None:
+            return False
+        else:
+            return min_valid < temp < max_valid
+    
 
     def controllo_sonda(self, sampling_interval:float, debug:bool = False) -> float:
         result = self._inizializza(sampling_interval, debug)
@@ -143,21 +150,29 @@ class Termocoppia:
         
     
     def read_temp_filtered(self, max_deviation:float=3.0, debug:bool=False) -> float:
-        t = self._read_tc()
-        if t is None:
-            counter = 0
-            while t is None:
-                t = self._read_tc()
-                counter += 1
-                if counter > 10:
-                    raise ErroreSonda
-        self.buffer.append(t)
         
-        # Se troppi pochi dati ritorna il dato grezzo
+        while True:
+            t = self._read_tc()
+            if not self._is_valid(t):
+                continue
+            self.buffer.append(t)
+            break
+        
+        # t = self._read_tc()
+        # if t is None:
+        #     counter = 0
+        #     while t is None:
+        #         t = self._read_tc()
+        #         counter += 1
+        #         if counter > 10:
+        #             raise ErroreSonda
+        # self.buffer.append(t)
+        
+        # Se troppi pochi dati ritorna la media semplice
         if len(self.buffer) < 3:
             if debug:
-                print(f"Meno di tre campioni: dato grezzo temperatura: {t:.1f}")
-            return t
+                print(f"Meno di tre campioni: media semplice temperatura: {t:.1f}")
+            return sum(self.buffer) / len(self.buffer)
         
         # Ordina i valori e rimuove il min e il max
         sorted_val = sorted(self.buffer)
