@@ -29,7 +29,7 @@ class SGP30:
 
     def read(self):
         self.bus.write_i2c_block_data(self.ADDRESS, 0x20, [0x08])
-        time.sleep(0.05)
+        time.sleep(0.005)
 
         data = self.bus.read_i2c_block_data(self.ADDRESS, 0, 6)
 

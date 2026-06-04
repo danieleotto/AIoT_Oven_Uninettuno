@@ -86,12 +86,13 @@ class Heating(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
+        delta_time:float = 0.0
         if self.timeout_limit is None:
             self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 240 #TODO per il momento lasciamo 0.5°C/sec + 240 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
-            delta_time:float = elapsed_time - last_time
+            delta_time = elapsed_time - last_time
             self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
@@ -160,10 +161,11 @@ class Soaking(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
+        delta_time:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
-            delta_time:float = elapsed_time - last_time
+            delta_time = elapsed_time - last_time
             self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
@@ -231,10 +233,11 @@ class Cooling(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
+        delta_time:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
-            delta_time:float = elapsed_time - last_time
+            delta_time = elapsed_time - last_time
             self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
