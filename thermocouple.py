@@ -150,7 +150,11 @@ class Termocoppia:
         
         while True:
             t = self._read_tc()
-            if not self._is_valid(t) or t is None:
+            if t is None:
+                continue
+            if not isinstance(t, (int, float)):
+                continue
+            if not self._is_valid(float(t)):
                 continue
             self.buffer.append(t)
             break
