@@ -263,20 +263,21 @@ def sgp_test(sgp:SGP30, sampling:float):
 
 with open("config.json") as config_file:
     config_data = json.load(config_file)
-    
+
+TC_MAX_TEMP:float = config_data["TC_MAX_TEMP"]    
 TC_SCK:int = config_data["TC_PIN_SCK"]
 TC_CS:int = config_data["TC_PIN_CS"]
 TC_DO:int = config_data["TC_PIN_DO"]
 RES_SSR_PIN:int = config_data["RES_SSR_PIN"]
 FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
 DHT22_PIN:int = config_data["DHT22_PIN"]
-sample_size:int = config_data["avg_sample_size"]
+SAMPLE_SIZE:int = config_data["avg_sample_size"]
 sampling:float = config_data["sample_interval"]
 PZEM_PORT:str = config_data["PZEM_port"]
 PZEM_TIMEOUT:float = config_data["PZEM_timeout"]
 I2C_BUS_ID:int = config_data["i2c_bus_id"]
 
-tc = Termocoppia(TC_SCK,TC_CS,TC_DO, sample_size)
+tc = Termocoppia(TC_SCK, TC_CS, TC_DO, SAMPLE_SIZE, TC_MAX_TEMP)
 dht22 = TempSensor(DHT22_PIN)
 ssr_res = SolidStateRelay(RES_SSR_PIN)
 ssr_fan = SolidStateRelay(FAN_SSR_PIN)

@@ -22,7 +22,7 @@ def debug_list_print(readings:list[float]) -> str:
 
 
 class Termocoppia:
-    def __init__(self, pin_sck:int, pin_cs:int, pin_do:int, sample_size:int, tc_max_temp:int) -> None:
+    def __init__(self, pin_sck:int, pin_cs:int, pin_do:int, sample_size:int, tc_max_temp:float=235) -> None:
         self.PIN_SCK = pin_sck
         self.PIN_CS = pin_cs
         self.PIN_DO = pin_do

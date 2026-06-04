@@ -46,7 +46,7 @@ while not config_loaded:
             json.dump(DEFAULT_CONFIG, f, indent=4)
         continue
         
-TC_MAX_TEMP:int = config_data["TC_MAX_TEMP"]
+TC_MAX_TEMP:float = config_data["TC_MAX_TEMP"]
 TC_SCK_PIN:int = config_data["TC_PIN_SCK"]
 TC_CS_PIN:int = config_data["TC_PIN_CS"]
 TC_DO_PIN:int = config_data["TC_PIN_DO"]
