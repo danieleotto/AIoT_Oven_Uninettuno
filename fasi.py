@@ -108,13 +108,13 @@ class Heating(Fase):
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
                     self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
                     self.ctx.ssr_res.turn_off()
                     self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                     print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -135,9 +135,9 @@ class Heating(Fase):
                                        self.ctx.ssr_fan.get_state(),
                                        sys_temp,
                                        res_power,
-                                       self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent(),
-                                       self.ctx.pzem.getPower(),
+                                       self.ctx.pzem.get_voltage(),
+                                       self.ctx.pzem.get_current(),
+                                       self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
 
@@ -181,12 +181,12 @@ class Soaking(Fase):
                     progress = min(elapsed_time / self.target_time, 1.0)
                     self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
                     self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                     self.ctx.ssr_res.turn_off()
                     print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
@@ -206,9 +206,9 @@ class Soaking(Fase):
                                        self.ctx.ssr_fan.get_state(), 
                                        sys_temp,
                                        res_power,
-                                       self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent(),
-                                       self.ctx.pzem.getPower(),
+                                       self.ctx.pzem.get_voltage(),
+                                       self.ctx.pzem.get_current(),
+                                       self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
        
@@ -253,12 +253,12 @@ class Cooling(Fase):
                     progress = min(elapsed_time / self.target_time, 1.0)
                     self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
                     self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                     self.ctx.ssr_res.turn_off()
                     print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
@@ -278,8 +278,8 @@ class Cooling(Fase):
                                        self.ctx.ssr_fan.get_state(), 
                                        sys_temp,
                                        res_power,
-                                       self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent(),
-                                       self.ctx.pzem.getPower(),
+                                       self.ctx.pzem.get_voltage(),
+                                       self.ctx.pzem.get_current(),
+                                       self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)

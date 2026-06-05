@@ -120,7 +120,7 @@ def pzem_test(sensor:PZEM004TModbus, sampling_time:float) -> str:
     print("Test sensore PZEM004T Modbus.\nCTRL+C per terminare.")
     try:
         while True:
-            readings = sensor.readAll()
+            readings = sensor.read_all()
             print(f"V: {readings['voltage']}V, I: {readings['current']}A, P: {readings['power']}W, E: {readings['energy']}J, F: {readings['frequency']}Hz, PF: {readings['powerfactor']}?, Alarm: {readings['alarm']}")
             time.sleep(sampling_time)
     except KeyboardInterrupt:
