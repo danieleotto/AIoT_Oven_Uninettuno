@@ -21,7 +21,7 @@ class PZEM004TModbus:
         self.client.connect()
                
 
-    def readAll(self):
+    def read_all(self):
         result = self.client.read_input_registers(address=0, count=10, device_id=self.dev_id)
         if result.isError():
             raise Exception("Errore Modbus")
@@ -45,26 +45,26 @@ class PZEM004TModbus:
         }
         
 
-    def getVoltage(self):
-        return self.readAll()['voltage']
+    def get_voltage(self):
+        return self.read_all()['voltage']
 
-    def getCurrent(self):
-        return self.readAll()['current']
+    def get_current(self):
+        return self.read_all()['current']
 
-    def getPower(self):
-        return self.readAll()['power']
+    def get_power(self):
+        return self.read_all()['power']
 
-    def getEnergy(self):
-        return self.readAll()['energy']
+    def get_energy(self):
+        return self.read_all()['energy']
 
-    def getFrequency(self):
-        return self.readAll()['frequency']
+    def get_frequency(self):
+        return self.read_all()['frequency']
 
-    def getPowerFactor(self):
-        return self.readAll()['powerfactor']
+    def get_powerfactor(self):
+        return self.read_all()['powerfactor']
 
-    def getAlarm(self):
-        return self.readAll()['alarm']
+    def get_alarm(self):
+        return self.read_all()['alarm']
 
     def __del__(self):
         try:
