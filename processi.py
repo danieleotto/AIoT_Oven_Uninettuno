@@ -113,19 +113,22 @@ class Essicatura:
             
             riscaldamento.run()
             essicatura.run()
-                    
+            
+            self.ctx.ssr_res.turn_off()        
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "OK")
             input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {time_convert_str(process_time)}.\nPremere un tasto per continuare...{ANSI.RESET}\n")    
             return "MAIN_MENU"
                 
         except KeyboardInterrupt:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "USER_STOP")
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
 
         except ErroreTimeout as e:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Timeout nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
@@ -134,10 +137,11 @@ class Essicatura:
             return "MAIN_MENU"
 
         except ErroreTemperatura as e:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
-            print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
+            print(f"- La temperatura rilevata eccede i 25 gradi di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
@@ -231,19 +235,22 @@ class Ricottura:
             riscaldamento.run()
             ricottura.run()
             raffreddamento.run()               
-                    
+            
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "OK")
             input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {time_convert_str(process_time)}.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
         except KeyboardInterrupt:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "USER_STOP")
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
 
         except ErroreTimeout as e:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Timeout nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
@@ -252,14 +259,16 @@ class Ricottura:
             return "MAIN_MENU"
 
         except ErroreTemperatura as e:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
-            print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
+            print(f"- La temperatura rilevata eccede i 25 gradi di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
         except ErroreSonda:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TC_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")
@@ -393,19 +402,22 @@ class SaldaturaSMD:
             reflow.run()
             reflow_peak.run()
             cooling.run()
-                                
+            
+            self.ctx.ssr_res.turn_off()            
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "OK")
             input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {time_convert_str(process_time)}.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
         except KeyboardInterrupt:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "USER_STOP")
             input(f"\n{ANSI.BOLD}{ANSI.RED}Processo terminato dall'utente.\nPremere un tasto per continuare...{ANSI.RESET}")
             return "MAIN_MENU"
         
         except ErroreTimeout as e:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TIMEOUT_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Timeout nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
@@ -414,14 +426,16 @@ class SaldaturaSMD:
             return "MAIN_MENU"
 
         except ErroreTemperatura as e:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TEMP_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Temperatura non stabile nella fase {e.step}.\nTempo trascorso: {time_convert_str(e.elapsed, ms=True)}")
-            print(f"- La temperatura rilevata eccede il 10% di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
+            print(f"- La temperatura rilevata eccede i 25 gradi di tolleranza.\nRilevata: {e.temp:.2f}°C - Target: {e.target:.2f}°C{ANSI.RESET}")
             input("Premere un tasto per continuare...")
             return "MAIN_MENU"
         
         except ErroreSonda:
+            self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "TC_ERROR")
             print(f"{ANSI.BOLD}{ANSI.RED}ERRORE: Sonda non rilevata.{ANSI.RESET}")

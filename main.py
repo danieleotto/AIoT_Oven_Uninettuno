@@ -8,25 +8,27 @@ from temp_sensor import TempSensor
 from context import Context
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
+from pid_pwm import PID
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
-    "avg_sample_size" : 10,
+    "TC_SAMPLE_SIZE" : 10,
+    "TC_MAX_TEMP": 200,
     "TC_PIN_SCK": 8,
     "TC_PIN_CS": 7,
     "TC_PIN_DO": 5,
     "RES_SSR_PIN": 2,
     "FAN_SSR_PIN": 3,
     "DHT22_PIN": 10,
-    "PZEM_port": "/dev/ttyUSB0",
-    "PZEM_timeout": 0.3,
-    "PZEM_address": 248,
-    "i2c_bus_id": 2,
-    "db_filename": "ovenDB.db",
-    "sample_interval": 0.2,
-    "kp": 2,
-    "ki": 0.5,
-    "kd": 1
+    "PZEM_PORT": "/dev/ttyUSB0",
+    "PZEM_TIMEOUT": 0.3,
+    "PZEM_ADDRESS": 248,
+    "I2C_BUS_ID": 2,
+    "DB_FILENAME": "ovenDB.db",
+    "SAMPLE_INTERVAL": 0.2,
+    "KP": 2,
+    "KI": 0,
+    "KD": 0
 }
 config_loaded:bool = False
 
@@ -44,30 +46,35 @@ while not config_loaded:
             json.dump(DEFAULT_CONFIG, f, indent=4)
         continue
         
+TC_MAX_TEMP:float = config_data["TC_MAX_TEMP"]
 TC_SCK_PIN:int = config_data["TC_PIN_SCK"]
 TC_CS_PIN:int = config_data["TC_PIN_CS"]
 TC_DO_PIN:int = config_data["TC_PIN_DO"]
 RES_SSR_PIN:int = config_data["RES_SSR_PIN"]
 FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
 DHT22_PIN:int = config_data["DHT22_PIN"]
-I2C_BUS_ID:int = config_data["i2c_bus_id"]
-PZEM_PORT:str = config_data["PZEM_port"]
-PZEM_TIMEOUT:float = config_data["PZEM_timeout"]
-PZEM_ADDRESS:int = config_data["PZEM_address"]
-SAMPLE_SIZE:int = config_data["avg_sample_size"]
-SAMPLING_INTERVAL:float = config_data["sample_interval"]
-DB_FILENAME:str = config_data["db_filename"]
-pid_values:dict[str, float] = {"kp": config_data["kp"], "ki": config_data["ki"], "kd": config_data["kd"]}
+I2C_BUS_ID:int = config_data["I2C_BUS_ID"]
+PZEM_PORT:str = config_data["PZEM_PORT"]
+PZEM_TIMEOUT:float = config_data["PZEM_TIMEOUT"]
+PZEM_ADDRESS:int = config_data["PZEM_ADDRESS"]
+SAMPLE_SIZE:int = config_data["TC_SAMPLE_SIZE"]
+SAMPLING_INTERVAL:float = config_data["SAMPLE_INTERVAL"]
+DB_FILENAME:str = config_data["DB_FILENAME"]
+KP:float = config_data["KP"]
+KI:float = config_data["KI"]
+KD:float = config_data["KD"]
 
-tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE)
+
+tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE, TC_MAX_TEMP)
 sq:SQLiteDB = SQLiteDB(DB_FILENAME)
 dht22:TempSensor = TempSensor(DHT22_PIN)
 pzem:PZEM004TModbus = PZEM004TModbus(PZEM_PORT, PZEM_TIMEOUT, PZEM_ADDRESS)
 sgp:SGP30 = SGP30(I2C_BUS_ID)
 ssr_res:SolidStateRelay = SolidStateRelay(RES_SSR_PIN)
 ssr_fan:SolidStateRelay = SolidStateRelay(FAN_SSR_PIN)
+pid:PID = PID(KP, KI, KD) #creiamo l'oggetto con kp-ki-kd standard da config.json, temp target verrà impostata all'interno delle fasi
 
-ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid_values)
+ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid)
 
 e_proc:Essicatura = Essicatura(ctx)
 r_proc:Ricottura = Ricottura(ctx)

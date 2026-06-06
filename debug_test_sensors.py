@@ -3,7 +3,7 @@ from ss_relay import SolidStateRelay
 from console_menu import TextMenu, ANSI
 from functools import partial
 from temp_sensor import TempSensor
-from customlib.exceptions import ErroreSonda
+from customlib.exceptions import ErroreSonda,ErroreMaxTemp
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
 import json, time, sys, os
@@ -37,9 +37,9 @@ def tc_test(sampling_time:float) -> str:
         if tc.controllo_sonda(sampling_time, debug=True) is not None:
             print("\n")
             while True:
-                t = tc.read_raw_temp()
+                t = tc.read_temp_raw()
                 temp = tc.read_temp_average()
-                print(f"Buffer: {tc.buffer}  |  LastTemp: {t:.1f}  | LastAVG: {temp:.1f}")
+                print(f"Buffer: {tc.buffer} | LastTemp: {t:.1f} | LastAVG: {temp:.1f}")
                 time.sleep(sampling_time)
         else:
             raise ErroreSonda
@@ -50,8 +50,33 @@ def tc_test(sampling_time:float) -> str:
     except ErroreSonda:
         input("Sonda non rilevata, programma terminato.\nPremere un tasto per continuare...")
         return "MAIN_MENU"
+    except ErroreMaxTemp:
+        input(f"Superato il limite massimo della sonda di {tc.tc_max_temp}")
+        return "MAIN_MENU"
+        
 
-
+def tc_test_filtered(sampling_time:float) -> str:
+    try:
+        print("Test Termocoppia.\nCTRL+C per terminare.")
+        if tc.controllo_sonda(sampling_time, debug=True) is not None:
+            print("\n")
+            while True:
+                tc.read_temp_filtered(debug=True)
+                time.sleep(sampling_time)
+        else:
+            raise ErroreSonda
+            
+    except KeyboardInterrupt:
+        input("\nTerminato. Premere un tasto per continuare")
+        return "MAIN_MENU"
+    except ErroreSonda:
+        input("Sonda non rilevata, programma terminato.\nPremere un tasto per continuare...")
+        return "MAIN_MENU"
+    except ErroreMaxTemp:
+        input(f"Superato il limite massimo della sonda di {tc.tc_max_temp}")
+        return "MAIN_MENU"
+    
+    
 def ssr_test(ssr: SolidStateRelay, nome: str) -> str:
     print(f"Test SSR {nome}, acceso 10 secondi, spento 10 secondi.\nCTRL+C per terminare.")
     last_time:float = time.time()
@@ -79,9 +104,12 @@ def dht22_test(dht:TempSensor, sampling_time:float) -> str:
     print("Test sensore DHT22.\nCTRL+C per terminare.")
     try:
         while True:
-            temp = dht.get_temperature()
-            hum = dht.get_humidity()
-            print(f"Lettura DHT22: Temperatura {temp:.1f}°C | Umidità {hum:.1f}.")
+            temp = dht.get_safe_temp()
+            hum = dht.get_safe_hum()
+            if temp is not None and hum is not None:
+                print(f"Lettura DHT22: Temperatura {temp:.1f}°C | Umidità {hum:.1f}.")
+            else:
+                print("Temperatura o umidità con valore: None")
             time.sleep(sampling_time)
     except KeyboardInterrupt:
         input("\nTerminato. Premere un tasto per continuare...")
@@ -92,7 +120,7 @@ def pzem_test(sensor:PZEM004TModbus, sampling_time:float) -> str:
     print("Test sensore PZEM004T Modbus.\nCTRL+C per terminare.")
     try:
         while True:
-            readings = sensor.readAll()
+            readings = sensor.read_all()
             print(f"V: {readings['voltage']}V, I: {readings['current']}A, P: {readings['power']}W, E: {readings['energy']}J, F: {readings['frequency']}Hz, PF: {readings['powerfactor']}?, Alarm: {readings['alarm']}")
             time.sleep(sampling_time)
     except KeyboardInterrupt:
@@ -141,7 +169,7 @@ def cycle_test(sampling_time:float, ssr:SolidStateRelay) -> str:
             # --- CICLO DI MANTENIMENTO ---
             print("Mantenimento in corso... (S per interrompere)")
             while True:
-                temp = tc.read_temp_average()
+                temp = tc.read_temp_filtered()
                 if temp is None:
                     temp = float(0)
                 print(f"\rTemp attuale: {temp:.1f}°C   (mantenimento)", end="")
@@ -213,20 +241,21 @@ def sgp_test(sgp:SGP30, sampling:float):
 
 with open("config.json") as config_file:
     config_data = json.load(config_file)
-    
+
+TC_MAX_TEMP:float = config_data["TC_MAX_TEMP"]    
 TC_SCK:int = config_data["TC_PIN_SCK"]
 TC_CS:int = config_data["TC_PIN_CS"]
 TC_DO:int = config_data["TC_PIN_DO"]
 RES_SSR_PIN:int = config_data["RES_SSR_PIN"]
 FAN_SSR_PIN:int = config_data["FAN_SSR_PIN"]
 DHT22_PIN:int = config_data["DHT22_PIN"]
-sample_size:int = config_data["avg_sample_size"]
-sampling:float = config_data["sample_interval"]
-PZEM_PORT:str = config_data["PZEM_port"]
-PZEM_TIMEOUT:float = config_data["PZEM_timeout"]
-I2C_BUS_ID:int = config_data["i2c_bus_id"]
+SAMPLE_SIZE:int = config_data["TC_SAMPLE_SIZE"]
+sampling:float = config_data["SAMPLE_INTERVAL"]
+PZEM_PORT:str = config_data["PZEM_PORT"]
+PZEM_TIMEOUT:float = config_data["PZEM_TIMEOUT"]
+I2C_BUS_ID:int = config_data["I2C_BUS_ID"]
 
-tc = Termocoppia(TC_SCK,TC_CS,TC_DO, sample_size)
+tc = Termocoppia(TC_SCK, TC_CS, TC_DO, SAMPLE_SIZE, TC_MAX_TEMP)
 dht22 = TempSensor(DHT22_PIN)
 ssr_res = SolidStateRelay(RES_SSR_PIN)
 ssr_fan = SolidStateRelay(FAN_SSR_PIN)
@@ -234,7 +263,8 @@ pzem = PZEM004TModbus(PZEM_PORT, PZEM_TIMEOUT)
 sgp = SGP30(I2C_BUS_ID)
 
 m = TextMenu("Menu principale",ANSI.CYAN, ANSI.WHITE)
-m.add_option("1","Test Termocoppia", partial(tc_test, sampling))
+m.add_option("0","Test Termocoppia", partial(tc_test, sampling))
+m.add_option("1","Test TC Filtrata", partial(tc_test_filtered, sampling))
 m.add_option("2","SSR Resistenze", partial(ssr_test, ssr_res, "Resistenze"))
 m.add_option("3","SSR Ventola", partial(ssr_test, ssr_fan, "Ventola"))
 m.add_option("4","Sensore DHT22", partial(dht22_test, dht22, sampling))

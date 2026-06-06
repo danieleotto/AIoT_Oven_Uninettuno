@@ -3,7 +3,7 @@ from customlib.functions import time_convert_str
 from console_menu import ANSI
 from customlib.exceptions import ErroreTemperatura, ErroreTimeout
 from context import Context
-from pid_pwm import PID, PWM
+from pid_pwm import PWM
 
 
 class Fase:
@@ -23,7 +23,6 @@ class Fase:
         self.is_done:bool = False
         self.step_start_time:float = 0.0
         self.step_end_time:float = 0.0
-        self.pid:PID = PID() #inizializziamo nella sottoclasse
         self.pwm_heat:PWM = PWM(self.ctx.ssr_res, frequenza=1.0) #1Hz
         self.pwm_cool:PWM = PWM(self.ctx.ssr_fan, frequenza=1.0) #1Hz
         
@@ -34,7 +33,7 @@ class Fase:
     
     
     def check_temperature(self, elapsed:float, temp:float, target:float) -> None:
-        if target - 10 < temp < target + 10: #TODO aggiornare i limiti temperatura
+        if target - 25 < temp < target + 25: #TODO aggiornare i limiti temperatura
             pass
         else:
             raise ErroreTemperatura(self.name, elapsed, temp, target)
@@ -82,17 +81,19 @@ class Heating(Fase):
 
 
     def run(self):
-        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
-        self.pid.set_pid_target(self.target_temp)
+        self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
-        last_time:float = 0.0  
+        last_time:float = 0.0
+        res_power:float = 0.0
+        delta_time:float = 0.0
         if self.timeout_limit is None:
-            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 120 #TODO per il momento lasciamo 0.5°C/sec + 120 sec
+            self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 240 #TODO per il momento lasciamo 0.5°C/sec + 240 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
-            delta_time:float = elapsed_time - last_time
+            delta_time = elapsed_time - last_time
+            self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
@@ -100,21 +101,20 @@ class Heating(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
-                self.pwm_heat.set_pid_output(res_power)
+                res_power = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
             
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
                     self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
                     self.ctx.ssr_res.turn_off()
                     self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                     print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -126,20 +126,21 @@ class Heating(Fase):
                                        self.target_temp, 
                                        temp,
                                        (self.target_temp - temp),
-                                       self.pid.kp,
-                                       self.pid.ki,
-                                       self.pid.kd, 
+                                       self.ctx.pid.kp,
+                                       self.ctx.pid.ki,
+                                       self.ctx.pid.kd, 
                                        elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(),
                                        sys_temp,
                                        res_power,
-                                       self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent(),
-                                       self.ctx.pzem.getPower(),
+                                       self.ctx.pzem.get_voltage(),
+                                       self.ctx.pzem.get_current(),
+                                       self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
+
 
 
 
@@ -155,15 +156,17 @@ class Soaking(Fase):
     
     
     def run(self):
-        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
-        self.pid.set_pid_target(self.target_temp)
+        self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
+        res_power:float = 0.0
+        delta_time:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
-            delta_time:float = elapsed_time - last_time
+            delta_time = elapsed_time - last_time
+            self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
@@ -171,20 +174,19 @@ class Soaking(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.pid.calcola_output(temp)
-                self.pwm_heat.set_pid_output(res_power)
+                res_power = self.ctx.pid.calcola_output(temp)
                 
-                self.check_temperature(elapsed_time, temp, self.target_temp)
+                #self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
                     self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
                     self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                     self.ctx.ssr_res.turn_off()
                     print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
@@ -195,21 +197,22 @@ class Soaking(Fase):
                                        self.target_temp, 
                                        temp,
                                        (self.target_temp - temp),
-                                       self.pid.kp,
-                                       self.pid.ki,
-                                       self.pid.kd,
+                                       self.ctx.pid.kp,
+                                       self.ctx.pid.ki,
+                                       self.ctx.pid.kd,
                                        elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
                                        sys_temp,
                                        res_power,
-                                       self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent(),
-                                       self.ctx.pzem.getPower(),
+                                       self.ctx.pzem.get_voltage(),
+                                       self.ctx.pzem.get_current(),
+                                       self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
        
+      
       
       
 class Cooling(Fase):
@@ -225,15 +228,17 @@ class Cooling(Fase):
         
     
     def run(self):
-        self.pid.set_pid(kp=self.ctx.pid_values['kp'], ki=self.ctx.pid_values['ki'], kd=self.ctx.pid_values['kd'])
-        self.pid.set_pid_target(self.target_temp)
+        self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
+        res_power:float = 0.0
+        delta_time:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
-            delta_time:float = elapsed_time - last_time
+            delta_time = elapsed_time - last_time
+            self.pwm_heat.update(res_power)
             if delta_time > self.ctx.sampling_interval:
                 sys_temp = self.ctx.dht22.get_safe_temp()
                 temp = self.ctx.tc.read_temp_safe()
@@ -241,20 +246,19 @@ class Cooling(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.pid.calcola_output_limitato_down(temp, temp_rate, self.target_temp_rate)
-                self.pwm_heat.set_pid_output(res_power)
+                res_power = self.ctx.pid.calcola_output_limitato_down(temp, temp_rate, self.target_temp_rate)
                 #TODO ventola?
                 
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
                     self.print_status(elapsed_time, temp, progress, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
                     self.print_status(elapsed_time, temp, 1.0, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
-                                      (self.ctx.pzem.getVoltage(), self.ctx.pzem.getCurrent(), self.ctx.pzem.getPower()),
+                                      (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                     self.ctx.ssr_res.turn_off()
                     print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
@@ -265,17 +269,17 @@ class Cooling(Fase):
                                        self.target_temp, 
                                        temp,
                                        (self.target_temp - temp),
-                                       self.pid.kp,
-                                       self.pid.ki,
-                                       self.pid.kd,
+                                       self.ctx.pid.kp,
+                                       self.ctx.pid.ki,
+                                       self.ctx.pid.kd,
                                        elapsed_time, 
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
                                        sys_temp,
                                        res_power,
-                                       self.ctx.pzem.getVoltage(),
-                                       self.ctx.pzem.getCurrent(),
-                                       self.ctx.pzem.getPower(),
+                                       self.ctx.pzem.get_voltage(),
+                                       self.ctx.pzem.get_current(),
+                                       self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)

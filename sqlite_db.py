@@ -128,8 +128,7 @@ class SQLiteDB:
 
             with open(LOG_FILENAME, "a", encoding="utf-8") as file:
                 if file.tell() == 0:
-                    title = """id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime,
-                    tempRate, ssrRstate, ssrFstate, sysTemp, resOutput, voltage, current, power, eco2, tvoc\n"""
+                    title = "id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput, voltage, current, power, eco2, tvoc\n"
                     file.write(title)
                 for sample in sample_list:
                     text_line = ",".join(str(value) for value in sample)
