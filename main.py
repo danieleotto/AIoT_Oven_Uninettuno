@@ -88,3 +88,4 @@ menu_principale.add_option("3", "Saldatura SMD", s_proc.process_menu)
 if __name__ == '__main__':
     menu_principale.run()
     sq.log_processes()
+    sgp.close()

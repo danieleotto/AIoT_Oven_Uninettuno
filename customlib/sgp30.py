@@ -48,6 +48,10 @@ class SGP30:
         eco2, _ = self.read()
         return eco2
 
+
     def get_tvoc(self):
         _, tvoc = self.read()
         return tvoc
+
+    def close(self):
+        self.bus.close()
