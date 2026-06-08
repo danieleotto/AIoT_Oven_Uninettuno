@@ -33,6 +33,7 @@ class SQLiteDB:
             ki REAL,
             kd REAL,
             elapsedTime REAL,
+            totalElapsedTime REAL,
             tempRate REAL,
             ssrRstate BOOLEAN,
             ssrFstate BOOLEAN,
@@ -55,7 +56,8 @@ class SQLiteDB:
                    kp:float,
                    ki:float,
                    kd:float, 
-                   elapsed_time:float, 
+                   elapsed_time:float,
+                   total_elapsed_time:float,
                    temp_rate:float, 
                    ssr_res_state:bool, 
                    ssr_fan_state:bool, 
@@ -70,11 +72,11 @@ class SQLiteDB:
         idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
             """INSERT INTO campioni (idproc, step, tempTarget, tempForno, errore,
-            kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput,
-            voltage, current, power, eco2, tvoc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            kp, ki, kd, elapsedTime, totalElapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput,
+            voltage, current, power, eco2, tvoc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (idproc, step, temp_target, temp_oven, errore,
-             kp, ki, kd, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp, res_output,
-             voltage, current, power, eco2, tvoc)
+             kp, ki, kd, elapsed_time, total_elapsed_time, temp_rate, ssr_res_state, ssr_fan_state,
+             sys_temp, res_output, voltage, current, power, eco2, tvoc)
         )
         self.conn.commit()
 
