@@ -86,7 +86,6 @@ class Heating(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
-        delta_time:float = 0.0
         if self.timeout_limit is None:
             self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 240 #TODO per il momento lasciamo 0.5°C/sec + 240 sec
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n\n{ANSI.RESET}")
@@ -141,7 +140,7 @@ class Heating(Fase):
                                        self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
-        return self.step_end_time
+        return last_time + prev_step_elapsed_time
 
 
 
@@ -162,7 +161,6 @@ class Soaking(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
-        delta_time:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
@@ -213,7 +211,7 @@ class Soaking(Fase):
                                        self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
-        return self.step_end_time
+        return last_time + prev_step_elapsed_time
        
       
       
@@ -235,7 +233,6 @@ class Cooling(Fase):
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
-        delta_time:float = 0.0
         print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
@@ -286,4 +283,4 @@ class Cooling(Fase):
                                        self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
-        return self.step_end_time
+        return last_time + prev_step_elapsed_time
