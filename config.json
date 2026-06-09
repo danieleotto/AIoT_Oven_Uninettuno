@@ -1,5 +1,5 @@
 {
-  "TC_SAMPLE_SIZE" : 11,
+  "TC_SAMPLE_SIZE" : 7,
   "TC_MAX_TEMP": 200,
   "TC_PIN_SCK": 8,
   "TC_PIN_CS": 7,
@@ -12,8 +12,8 @@
   "PZEM_ADDRESS": 248,
   "I2C_BUS_ID": 2,
   "DB_FILENAME": "ovenDB_test.db",
-  "SAMPLE_INTERVAL": 0.2,
-  "KP": 0.1,
-  "KI": 0,
-  "KD": 0
+  "SAMPLE_INTERVAL": 1.0,
+  "KP": 0.018,
+  "KI": 0.0000067,
+  "KD": 0.35
 }
