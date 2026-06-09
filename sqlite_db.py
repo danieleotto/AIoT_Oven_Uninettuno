@@ -5,11 +5,14 @@ from customlib.functions import get_timestamp
 class SQLiteDB:
     def __init__(self, filename:str) -> None:
         self.DB_DIR = "database"
-        self.DB_FILE = os.path.join(self.DB_DIR, filename)
         os.makedirs(self.DB_DIR, exist_ok=True)
+        self.DB_FILE = os.path.join(self.DB_DIR, filename)
         
         self.LOG_DIR = "logs"
         os.makedirs(self.LOG_DIR, exist_ok=True)
+        self.PROCESSES_LOG_FILE =  "Process_List.csv"
+        self.PROCESSES_LOG_FILENAME = os.path.join(self.LOG_DIR, self.PROCESSES_LOG_FILE)
+
 
         self.conn = sqlite3.connect(self.DB_FILE)
         self.cursor = self.conn.cursor()
@@ -104,7 +107,7 @@ class SQLiteDB:
     
     
     def read_samples_by_id(self, id_proc:str) -> list:
-        query = f"SELECT * FROM campioni WHERE idProc = ?", (id_proc,)
+        query = f"SELECT * FROM campioni WHERE idProc = {id_proc}"
         self.cursor.execute(query)
         return self.cursor.fetchall()
 
@@ -115,7 +118,8 @@ class SQLiteDB:
 
 
     def read_processes_by_id(self, id_proc:str) -> list:
-        self.cursor.execute("SELECT * FROM listaprocessi WHERE idProc = ?", (id_proc,))
+        query = f"SELECT * FROM listaprocessi WHERE idProc = {id_proc}"
+        self.cursor.execute(query)
         return self.cursor.fetchall()
 
 
@@ -145,14 +149,13 @@ class SQLiteDB:
     
     
     def log_processes(self) -> None:
-        LOG_FILE =  "Process_List.csv"
-        LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
-        last_id = self.get_last_id("listaprocessi")
+        if os.path.exists(self.PROCESSES_LOG_FILENAME):
+            os.remove(self.PROCESSES_LOG_FILENAME)
+        
+        process_list = self.read_all_processes()
 
-        if last_id is not None:
-            process = self.read_processes_by_id(last_id)
-            with open(LOG_FILENAME, "a", encoding="utf-8") as file:
-                if file.tell() == 0:
-                    file.write("idProc, timestamp, processo, duration, state\n")
+        with open(self.PROCESSES_LOG_FILENAME, "a", encoding="utf-8") as file:
+            file.write("idProc, timestamp, processo, duration, state\n")
+            for process in process_list:
                 text_line = ",".join(str(value) for value in process)
                 file.write(text_line + "\n")
