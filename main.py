@@ -12,7 +12,7 @@ from pid_pwm import PID
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
-    "TC_SAMPLE_SIZE" : 10,
+    "TC_SAMPLE_SIZE" : 7,
     "TC_MAX_TEMP": 200,
     "TC_PIN_SCK": 8,
     "TC_PIN_CS": 7,
@@ -25,10 +25,10 @@ DEFAULT_CONFIG = {
     "PZEM_ADDRESS": 248,
     "I2C_BUS_ID": 2,
     "DB_FILENAME": "ovenDB.db",
-    "SAMPLE_INTERVAL": 0.2,
-    "KP": 2,
-    "KI": 0,
-    "KD": 0
+    "SAMPLE_INTERVAL": 1.0,
+    "KP": 0.018,
+    "KI": 0.0000067,
+    "KD": 0.35
 }
 config_loaded:bool = False
 
