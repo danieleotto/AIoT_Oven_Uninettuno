@@ -20,6 +20,7 @@ class Fase:
         self.target_time = target_time
         self.target_temp_rate = target_temp_rate
         self.timeout_limit= timeout_limit
+        self.start_temp:float = 0.0
         self.is_done:bool = False
         self.step_start_time:float = 0.0
         self.step_end_time:float = 0.0
@@ -77,10 +78,9 @@ class Heating(Fase):
                  target_temp_rate:float | None = None, 
                  timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, target_temp_rate, timeout_limit)
-        self.start_temp:float = 0.0
 
 
-    def run(self):
+    def run(self, prev_step_elapsed_time:float = 0.0) -> float:
         self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
@@ -89,7 +89,7 @@ class Heating(Fase):
         delta_time:float = 0.0
         if self.timeout_limit is None:
             self.timeout_limit = (self.target_temp - last_temp) / 0.5 + 240 #TODO per il momento lasciamo 0.5°C/sec + 240 sec
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n{ANSI.RESET}")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase riscaldamento\n\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time = elapsed_time - last_time
@@ -123,13 +123,14 @@ class Heating(Fase):
                 last_time = elapsed_time
                 last_temp = temp
                 self.ctx.sq.add_sample(self.name, 
-                                       self.target_temp, 
+                                       self.target_temp,
                                        temp,
                                        (self.target_temp - temp),
                                        self.ctx.pid.kp,
                                        self.ctx.pid.ki,
                                        self.ctx.pid.kd, 
-                                       elapsed_time, 
+                                       elapsed_time,
+                                       elapsed_time + prev_step_elapsed_time,
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(),
@@ -140,6 +141,7 @@ class Heating(Fase):
                                        self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
+        return self.step_end_time
 
 
 
@@ -152,17 +154,16 @@ class Soaking(Fase):
                  target_time:float, 
                  timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, None, timeout_limit)
-        self.start_temp:float = 0.0
     
     
-    def run(self):
+    def run(self, prev_step_elapsed_time:float= 0.0) -> float:
         self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
         delta_time:float = 0.0
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n{ANSI.RESET}")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase mantenimento temperatura...\n\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time = elapsed_time - last_time
@@ -200,7 +201,8 @@ class Soaking(Fase):
                                        self.ctx.pid.kp,
                                        self.ctx.pid.ki,
                                        self.ctx.pid.kd,
-                                       elapsed_time, 
+                                       elapsed_time,
+                                       elapsed_time + prev_step_elapsed_time,
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
@@ -211,6 +213,7 @@ class Soaking(Fase):
                                        self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
+        return self.step_end_time
        
       
       
@@ -224,17 +227,16 @@ class Cooling(Fase):
                  target_temp_rate:float | None, 
                  timeout_limit:float | None = None) -> None:
         super().__init__(name, ctx, target_temp, target_time, target_temp_rate, timeout_limit)
-        self.start_temp:float = 0.0
         
     
-    def run(self):
+    def run(self, prev_step_elapsed_time:float = 0.0) -> float:
         self.ctx.pid.set_pid_target(self.target_temp)
         self.step_start_time = time.time()
         self.start_temp = last_temp = self.ctx.tc.read_temp_safe()
         last_time:float = 0.0
         res_power:float = 0.0
         delta_time:float = 0.0
-        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n{ANSI.RESET}")
+        print(f"{ANSI.BOLD}{ANSI.CYAN}Inizio fase raffreddamento...\n\n\n\n\n\n\n{ANSI.RESET}")
         while not self.is_done:
             elapsed_time = time.time() - self.step_start_time
             delta_time = elapsed_time - last_time
@@ -272,7 +274,8 @@ class Cooling(Fase):
                                        self.ctx.pid.kp,
                                        self.ctx.pid.ki,
                                        self.ctx.pid.kd,
-                                       elapsed_time, 
+                                       elapsed_time,
+                                       elapsed_time + prev_step_elapsed_time,
                                        temp_rate, 
                                        self.ctx.ssr_res.get_state(), 
                                        self.ctx.ssr_fan.get_state(), 
@@ -283,3 +286,4 @@ class Cooling(Fase):
                                        self.ctx.pzem.get_power(),
                                        eco2,
                                        tvoc)
+        return self.step_end_time

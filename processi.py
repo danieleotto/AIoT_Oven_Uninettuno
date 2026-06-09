@@ -1,4 +1,7 @@
 import os, time, json, sys
+
+from typing_extensions import override
+
 from console_menu import TextMenu, ANSI
 from functools import partial
 from customlib.functions import todo_placeholder, get_timestamp, time_convert_str, clear_console
@@ -7,64 +10,77 @@ from fasi import Heating, Soaking, Cooling
 from context import Context
 
 
-def clear_values(params:dict, menu:TextMenu) -> None:
-    try:
-        for key,val in params.items():
-            params[key] = None
-        menu.disable_exec()
-        print("Parametri cancellati...")
-        time.sleep(0.5)
-    except:
-        input("Errore durante il cancellamento dei dati.\nPremere un tasto per continuare...")
+class Processo:
+    def __init__(self,
+                 ctx:Context,
+                 process_name:str,
+                 params:dict[str, float | None],
+                 process_menu:TextMenu,
+                 preset_menu:TextMenu) -> None:
+        self.ctx = ctx
+        self.process_name = process_name
+        self.params:dict[str, float | None] = params
+        self.process_menu = process_menu
+        self.preset_menu = preset_menu
+
+
+    def clear_values(self) -> None:
+        try:
+            for key,val in self.params.items():
+                self.params[key] = None
+            self.process_menu.disable_exec()
+            print("Parametri cancellati...")
+            time.sleep(0.5)
+        except:
+            input("Errore durante il cancellamento dei dati.\nPremere un tasto per continuare...")
     
         
-def load_presets(self, preset_file:str, menu:TextMenu) -> None:
-    #TODO presetFile type
-    #file = preset_file
-    filename = os.path.join("presets", preset_file)
-    with open(filename) as fn:
-        presets = json.load(fn)            
-    for item in presets["values"]:
-        if item is presets["values"][-1]:
-            menu.add_option(item["id"], item["name"]+"\n", partial(self._set_value_from_preset, item))
-        else:
-            menu.add_option(item["id"], item["name"], partial(self._set_value_from_preset, item))
-    #TODO verificare il preset creators
-    menu.add_option("C", "Crea preset ", todo_placeholder)
-  
-  
-def is_complete(obj:dict) -> bool:
-    return all(v is not None for v in obj.values())
+    def load_presets(self, preset_file:str) -> None:
+        #TODO presetFile type
+        #file = preset_file
+        filename = os.path.join("presets", preset_file)
+        with open(filename) as fn:
+            presets = json.load(fn)
+        for item in presets["values"]:
+            if item is presets["values"][-1]:
+                self.preset_menu.add_option(item["id"], item["name"]+"\n", partial(self._set_value_from_preset, item))
+            else:
+                self.preset_menu.add_option(item["id"], item["name"], partial(self._set_value_from_preset, item))
+        #TODO verificare il preset creators
+        self.preset_menu.add_option("C", "Crea preset ", todo_placeholder)
 
 
-def print_title(title:str) -> None:
-    print("\n"+"="*50)
-    print(f"{ANSI.BOLD}{ANSI.MAGENTA}{title}{ANSI.RESET}")
-    print("="*50)
+    def _set_value_from_preset(self, value:dict) -> str:
+        return "BACK"
+
+
+    def check_complete(self) -> None:
+        if all(v is not None for v in self.params.values()):
+            self.process_menu.enable_exec()
+
+
+    def print_title(self) -> None:
+        print("\n"+"="*50)
+        print(f"{ANSI.BOLD}{ANSI.MAGENTA}{self.process_menu.title}{ANSI.RESET}")
+        print("="*50)
+        print("Premi CTRL+C per interrompere il processo.\n")
+
+
+
     
-
-def dht_ambient_safe_temp(ctx:Context) -> float:
-    t = ctx.dht22.get_temperature()
-    if t is None:
-        return 22.0
-    else:
-        return t
-
-
-    
-class Essicatura:
+class Essicatura(Processo):
     """Gestisce il processo di essicatura."""
     def __init__(self, ctx:Context) -> None:
-        self.ctx = ctx
-        self.process_name = "Essicatura"
-        self.params:dict[str, float | None] = {
+        parametri:dict[str, float | None] = {
             "ris_target_temp": None,
             "ess_target_time": None
         }
-        self.process_menu = TextMenu("                --- ESSICATURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
-        self.preset_menu = TextMenu("            --- PRESET ESSICATURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        process = TextMenu("                --- ESSICATURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
+        preset = TextMenu("            --- PRESET ESSICATURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        super().__init__(ctx, "Essicatura", parametri, process, preset)
+
         self.process_menu.add_option("P", "Presets di Essicatura", self.preset_menu)
-        self.process_menu.add_option("D", "Cancella dati inseriti\n", partial(clear_values, self.params, self.process_menu))
+        self.process_menu.add_option("D", "Cancella dati inseriti\n", self.clear_values)
         self.process_menu.add_option("1", 
                                      lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
                                      partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
@@ -73,25 +89,24 @@ class Essicatura:
                                      partial(self._set_value,"ess_target_time","Durata essicatura [s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
-        load_presets(self,"essicatura.json",self.preset_menu)     
+        self.load_presets("essicatura.json")
      
 
     def _set_value(self, key:str, message:str) -> None:
         try:
             v = float(input(message))
             self.params[key] = v
-            if is_complete(self.params):
-                self.process_menu.enable_exec()
+            self.check_complete()
         except ValueError:
             print("Valore non valido.")
             input("Invio per continuare...")
     
-    
-    def _set_value_from_preset(self, value):
+
+    @override
+    def _set_value_from_preset(self, value:dict) -> str:
         self.params["ris_target_temp"] = value["ris_target_temp"]
         self.params["ess_target_time"] = value["ess_target_time"]
-        if is_complete(self.params):
-            self.process_menu.enable_exec()
+        self.check_complete()
         print("Preset caricato...")
         time.sleep(0.5)
         return "BACK"
@@ -102,17 +117,16 @@ class Essicatura:
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
         
-        riscaldamento = Heating("Riscaldamento", self.ctx, self.params['ris_target_temp'], None, None)
-        essicatura = Soaking("Essicatura", self.ctx, self.params['ris_target_temp'], self.params['ess_target_time'])
+        riscaldamento:Heating = Heating("Riscaldamento", self.ctx, self.params['ris_target_temp'], None, None)
+        essicatura:Soaking = Soaking("Essicatura", self.ctx, self.params['ris_target_temp'], self.params['ess_target_time'])
 
         try:
             clear_console()    
-            print_title(self.process_menu.title)
-            print("Press CTRL+C per interrompere il processo.\n")
+            self.print_title()
             self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             
-            riscaldamento.run()
-            essicatura.run()
+            step_riscaldamento:float = riscaldamento.run()
+            essicatura.run(step_riscaldamento)
             
             self.ctx.ssr_res.turn_off()        
             process_time = time.time() - start_time
@@ -156,25 +170,25 @@ class Essicatura:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             self.ctx.sq.log_samples()
-            clear_values(self.params, self.process_menu)
+            self.clear_values()
 
 
 
-class Ricottura:
+class Ricottura(Processo):
     """Gestisce il processo di ricottura."""
     def __init__(self, ctx:Context) -> None:
-        self.ctx = ctx
-        self.process_name = "Ricottura"
-        self.params:dict[str, float | None] = {
+        parametri:dict[str, float | None] = {
             "ris_target_temp": None,
             "ric_target_time": None,
             "cool_target_temp_rate": None,
             "cool_target_time_calc": None
         }
-        self.process_menu = TextMenu("                 --- RICOTTURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
-        self.preset_menu = TextMenu("             --- PRESET RICOTTURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        process_menu = TextMenu("                 --- RICOTTURA ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
+        preset_menu = TextMenu("             --- PRESET RICOTTURA ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        super().__init__(ctx, "Ricottura", parametri, process_menu, preset_menu)
+
         self.process_menu.add_option("P", "Presets di Ricottura",self.preset_menu)
-        self.process_menu.add_option("D", "Cancella dati inseriti\n", partial(clear_values, self.params, self.process_menu))
+        self.process_menu.add_option("D", "Cancella dati inseriti\n", self.clear_values)
         self.process_menu.add_option("1", 
                                      lambda: f"Imposta Target Temp.: {self.params['ris_target_temp'] or '-'} [°C]", 
                                      partial(self._set_value, "ris_target_temp", "Target temperatura [°C]: "))
@@ -186,7 +200,7 @@ class Ricottura:
                                      partial(self._set_value, "cool_target_temp_rate","Rate raffreddamento [°C/s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
-        load_presets(self, "ricottura.json", self.preset_menu)
+        self.load_presets("ricottura.json")
      
         
     def _set_value(self, value, message):
@@ -195,21 +209,20 @@ class Ricottura:
             self.params[value] = v
             if self.params["cool_target_temp_rate"] and self.params["ris_target_temp"]:
                 self.params["cool_target_time_calc"] = round((self.params["ris_target_temp"] - 20) / self.params["cool_target_temp_rate"])
-            if is_complete(self.params):
-                self.process_menu.enable_exec()
+            self.check_complete()
         except ValueError:
             print("Valore non valido.")
             print("Invio per continuare...")
     
-    
+
+    @override
     def _set_value_from_preset(self, item):
         self.params["ris_target_temp"] = item["ris_target_temp"]
         self.params["ric_target_time"] = item["ric_target_time"]
         self.params["cool_target_temp_rate"] = item["cool_target_temp_rate"]
         if self.params["cool_target_temp_rate"] and self.params["ris_target_temp"]: #TODO controllare il 20 nella riga sotto
             self.params["cool_target_time_calc"] = round((self.params["ris_target_temp"] - 20) / self.params["cool_target_temp_rate"])
-        if is_complete(self.params):
-            self.process_menu.enable_exec()
+        self.check_complete()
         print("Preset caricato...")
         time.sleep(0.5)
         return "BACK"
@@ -219,7 +232,7 @@ class Ricottura:
         timestamp = get_timestamp(readable=False)
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
-        sys_temp:float = dht_ambient_safe_temp(self.ctx)
+        sys_temp:float = self.ctx.dht22.get_temperature()
         
         riscaldamento = Heating("Riscaldamento", self.ctx, self.params['ris_target_temp'], None, None)
         ricottura = Soaking("Ricottura", self.ctx, self.params['ris_target_temp'], self.params['ric_target_time'], None)
@@ -227,14 +240,13 @@ class Ricottura:
                 
         try:
             clear_console()
-            print_title(self.process_menu.title)
-            print("Premi CTRL+C per interrompere il processo.\n")
+            self.print_title()
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             raffreddamento.target_temp = start_temp + 20.0
             
-            riscaldamento.run()
-            ricottura.run()
-            raffreddamento.run()               
+            step_riscaldamento:float = riscaldamento.run()
+            step_ricottura:float = ricottura.run(step_riscaldamento)
+            raffreddamento.run(step_ricottura)
             
             self.ctx.ssr_res.turn_off()
             process_time = time.time() - start_time
@@ -279,16 +291,14 @@ class Ricottura:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             self.ctx.sq.log_samples()
-            clear_values(self.params, self.process_menu)
+            self.clear_values()
 
 
 
-class SaldaturaSMD:
+class SaldaturaSMD(Processo):
     """Gestisce il processo di saldatura SMD per reflow."""
     def __init__(self, ctx:Context) -> None:
-        self.ctx = ctx
-        self.process_name = "Saldatura"
-        self.params:dict[str, float | None] = {
+        parametri:dict[str, float | None] = {
             "ph_temp": None,
             "ph_rate": None,
             "ph_time_calc": None,
@@ -301,10 +311,12 @@ class SaldaturaSMD:
             "cooling_rate": None,
             "cooling_time_calc": None,           
         }
-        self.process_menu = TextMenu("              --- SALDATURA SMD ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
-        self.preset_menu = TextMenu("           --- PRESET SALDATURA SMD ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        process_menu = TextMenu("              --- SALDATURA SMD ---", color_title=ANSI.MAGENTA, color_option=ANSI.CYAN)
+        preset_menu = TextMenu("           --- PRESET SALDATURA SMD ---", color_title=ANSI.CYAN, color_option=ANSI.WHITE)
+        super().__init__(ctx, "Saldatura SMD", parametri, process_menu, preset_menu)
+
         self.process_menu.add_option("P", "Presets di Saldatura SMD",self.preset_menu)
-        self.process_menu.add_option("D", "Cancella dati inseriti\n", partial(clear_values, self.params, self.process_menu))
+        self.process_menu.add_option("D", "Cancella dati inseriti\n", self.clear_values)
         self.process_menu.add_option("1", 
                                      lambda: f"Imposta Pre-Heat temp   : {self.params['ph_temp'] or '-'} [°C]", 
                                      partial(self._set_value,"ph_temp","Target temperatura [°C]: "))
@@ -328,7 +340,7 @@ class SaldaturaSMD:
                                      partial(self._set_value,"cooling_rate","Target rate [s]: "))
         self.process_menu.add_option("A", "Avvia", self.run, disabled=True, executable=True)
         #TODO se esiste file preset carica
-        load_presets(self, "saldatura.json", self.preset_menu)
+        self.load_presets("saldatura.json")
      
         
     def _set_value(self, value, message):
@@ -345,13 +357,13 @@ class SaldaturaSMD:
             if self.params["reflow_temp"] and self.params["cooling_rate"]:
                 self.params["cooling_time_calc"] = round((self.params["reflow_temp"] - 20) / self.params["cooling_rate"])
 
-            if is_complete(self.params):
-                self.process_menu.enable_exec()
+            self.check_complete()
         except ValueError:
             print("Valore non valido.")
             print("Invio per continuare...")
     
-    
+
+    @override
     def _set_value_from_preset(self, item):
         self.params["ph_temp"] = item["ph_temp"]
         self.params["ph_rate"] = item["ph_rate"]
@@ -370,8 +382,7 @@ class SaldaturaSMD:
         if self.params["reflow_temp"] and self.params["cooling_rate"]:
             self.params["cooling_time_calc"] = round((self.params["reflow_temp"] - 20) / self.params["cooling_rate"])
 
-        if is_complete(self.params):
-            self.process_menu.enable_exec()
+        self.check_complete()
         print("Preset caricato...")
         time.sleep(0.5)
         return "BACK"
@@ -381,7 +392,7 @@ class SaldaturaSMD:
         timestamp = get_timestamp(readable=False)
         self.ctx.sq.add_process(timestamp, self.process_name)
         start_time:float = time.time()
-        sys_temp:float = dht_ambient_safe_temp(self.ctx)
+        sys_temp:float = self.ctx.dht22.get_temperature()
 
         preheat = Heating("Pre-heating", self.ctx, self.params['ph_temp'], self.params['ph_time_calc'], self.params['ph_rate'])
         soaking = Soaking("Soaking", self.ctx, self.params['soak_temp_calc'], self.params['soak_time'])
@@ -392,16 +403,15 @@ class SaldaturaSMD:
         
         try:
             clear_console()
-            print_title(self.process_menu.title)
-            print("Premi CTRL+C per interrompere il processo.\n")
+            self.print_title()
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             cooling.target_temp = start_temp + 20.0
             
-            preheat.run()
-            soaking.run()
-            reflow.run()
-            reflow_peak.run()
-            cooling.run()
+            step_preheat = preheat.run()
+            step_soaking = soaking.run(step_preheat)
+            step_reflow = reflow.run(step_soaking)
+            step_preflow = reflow_peak.run(step_reflow)
+            cooling.run(step_preflow)
             
             self.ctx.ssr_res.turn_off()            
             process_time = time.time() - start_time
@@ -446,4 +456,4 @@ class SaldaturaSMD:
             self.ctx.ssr_res.turn_off()
             self.ctx.ssr_fan.turn_off()
             self.ctx.sq.log_samples()
-            clear_values(self.params, self.process_menu)
+            self.clear_values()

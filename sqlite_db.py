@@ -5,11 +5,14 @@ from customlib.functions import get_timestamp
 class SQLiteDB:
     def __init__(self, filename:str) -> None:
         self.DB_DIR = "database"
-        self.DB_FILE = os.path.join(self.DB_DIR, filename)
         os.makedirs(self.DB_DIR, exist_ok=True)
+        self.DB_FILE = os.path.join(self.DB_DIR, filename)
         
         self.LOG_DIR = "logs"
         os.makedirs(self.LOG_DIR, exist_ok=True)
+        self.PROCESSES_LOG_FILE =  "Process_List.csv"
+        self.PROCESSES_LOG_FILENAME = os.path.join(self.LOG_DIR, self.PROCESSES_LOG_FILE)
+
 
         self.conn = sqlite3.connect(self.DB_FILE)
         self.cursor = self.conn.cursor()
@@ -33,6 +36,7 @@ class SQLiteDB:
             ki REAL,
             kd REAL,
             elapsedTime REAL,
+            totalElapsedTime REAL,
             tempRate REAL,
             ssrRstate BOOLEAN,
             ssrFstate BOOLEAN,
@@ -55,7 +59,8 @@ class SQLiteDB:
                    kp:float,
                    ki:float,
                    kd:float, 
-                   elapsed_time:float, 
+                   elapsed_time:float,
+                   total_elapsed_time:float,
                    temp_rate:float, 
                    ssr_res_state:bool, 
                    ssr_fan_state:bool, 
@@ -70,11 +75,11 @@ class SQLiteDB:
         idproc = self.get_last_id("listaprocessi")
         self.cursor.execute(
             """INSERT INTO campioni (idproc, step, tempTarget, tempForno, errore,
-            kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput,
-            voltage, current, power, eco2, tvoc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            kp, ki, kd, elapsedTime, totalElapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput,
+            voltage, current, power, eco2, tvoc) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
             (idproc, step, temp_target, temp_oven, errore,
-             kp, ki, kd, elapsed_time, temp_rate, ssr_res_state, ssr_fan_state, sys_temp, res_output,
-             voltage, current, power, eco2, tvoc)
+             kp, ki, kd, elapsed_time, total_elapsed_time, temp_rate, ssr_res_state, ssr_fan_state,
+             sys_temp, res_output, voltage, current, power, eco2, tvoc)
         )
         self.conn.commit()
 
@@ -112,6 +117,12 @@ class SQLiteDB:
         return self.cursor.fetchall()
 
 
+    def read_processes_by_id(self, id_proc:str) -> list:
+        query = f"SELECT * FROM listaprocessi WHERE idProc = {id_proc}"
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
+
+
     def get_last_id(self, tablename:str) -> str | None:
         query = f"SELECT * FROM {tablename} ORDER BY 1 DESC LIMIT 1"
         self.cursor.execute(query)
@@ -128,7 +139,7 @@ class SQLiteDB:
 
             with open(LOG_FILENAME, "a", encoding="utf-8") as file:
                 if file.tell() == 0:
-                    title = "id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput, voltage, current, power, eco2, tvoc\n"
+                    title = "id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime, totalElapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput, voltage, current, power, eco2, tvoc\n"
                     file.write(title)
                 for sample in sample_list:
                     text_line = ",".join(str(value) for value in sample)
@@ -138,14 +149,13 @@ class SQLiteDB:
     
     
     def log_processes(self) -> None:
-        timestamp = get_timestamp(readable=True)
-        LOG_FILE = timestamp + "_List.csv"
-        LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
-        process_list = self.read_all_processes()
+        if os.path.exists(self.PROCESSES_LOG_FILENAME):
+            os.remove(self.PROCESSES_LOG_FILENAME)
         
-        with open(LOG_FILENAME, "a", encoding="utf-8") as file:
-            if file.tell() == 0:
-                file.write("idProc, timestamp, processo, duration, state\n")
+        process_list = self.read_all_processes()
+
+        with open(self.PROCESSES_LOG_FILENAME, "a", encoding="utf-8") as file:
+            file.write("idProc, timestamp, processo, duration, state\n")
             for process in process_list:
                 text_line = ",".join(str(value) for value in process)
                 file.write(text_line + "\n")
