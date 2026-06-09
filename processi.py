@@ -125,7 +125,7 @@ class Essicatura(Processo):
             self.print_title()
             self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             
-            step_riscaldamento:float = riscaldamento.run(start_time)
+            step_riscaldamento:float = riscaldamento.run()
             essicatura.run(step_riscaldamento)
             
             self.ctx.ssr_res.turn_off()        
@@ -244,7 +244,7 @@ class Ricottura(Processo):
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             raffreddamento.target_temp = start_temp + 20.0
             
-            step_riscaldamento:float = riscaldamento.run(start_time)
+            step_riscaldamento:float = riscaldamento.run()
             step_ricottura:float = ricottura.run(step_riscaldamento)
             raffreddamento.run(step_ricottura)
             
@@ -407,7 +407,7 @@ class SaldaturaSMD(Processo):
             start_temp = self.ctx.tc.controllo_sonda(self.ctx.sampling_interval)
             cooling.target_temp = start_temp + 20.0
             
-            step_preheat = preheat.run(start_time)
+            step_preheat = preheat.run()
             step_soaking = soaking.run(step_preheat)
             step_reflow = reflow.run(step_soaking)
             step_preflow = reflow_peak.run(step_reflow)
