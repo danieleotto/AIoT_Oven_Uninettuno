@@ -104,13 +104,18 @@ class SQLiteDB:
     
     
     def read_samples_by_id(self, id_proc:str) -> list:
-        query = f"SELECT * FROM campioni WHERE idProc = {id_proc}"
+        query = f"SELECT * FROM campioni WHERE idProc = ?", (id_proc,)
         self.cursor.execute(query)
         return self.cursor.fetchall()
 
 
     def read_all_processes(self) -> list:
         self.cursor.execute("SELECT * FROM listaprocessi ORDER BY idProc ASC")
+        return self.cursor.fetchall()
+
+
+    def read_processes_by_id(self, id_proc:str) -> list:
+        self.cursor.execute("SELECT * FROM listaprocessi WHERE idProc = ?", (id_proc,))
         return self.cursor.fetchall()
 
 
@@ -140,14 +145,14 @@ class SQLiteDB:
     
     
     def log_processes(self) -> None:
-        timestamp = get_timestamp(readable=True)
-        LOG_FILE = timestamp + "_List.csv"
+        LOG_FILE =  "Process_List.csv"
         LOG_FILENAME = os.path.join(self.LOG_DIR, LOG_FILE)
-        process_list = self.read_all_processes()
-        
-        with open(LOG_FILENAME, "a", encoding="utf-8") as file:
-            if file.tell() == 0:
-                file.write("idProc, timestamp, processo, duration, state\n")
-            for process in process_list:
+        last_id = self.get_last_id("listaprocessi")
+
+        if last_id is not None:
+            process = self.read_processes_by_id(last_id)
+            with open(LOG_FILENAME, "a", encoding="utf-8") as file:
+                if file.tell() == 0:
+                    file.write("idProc, timestamp, processo, duration, state\n")
                 text_line = ",".join(str(value) for value in process)
                 file.write(text_line + "\n")
