@@ -100,7 +100,8 @@ class Heating(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
+                res_power_pid = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
+                res_power = self.ctx.ml_pred.output_corretto_ml(res_power_pid, temp, temp_rate, self.target_temp, "Riscaldamento")
             
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
@@ -173,8 +174,9 @@ class Soaking(Fase):
                 delta_temp = temp - last_temp
                 temp_rate = delta_temp / delta_time
                 
-                res_power = self.ctx.pid.calcola_output(temp)
-                
+                res_power_pid = self.ctx.pid.calcola_output(temp)
+                res_power = self.ctx.ml_pred.output_corretto_ml(res_power_pid, temp, temp_rate, self.target_temp, "Essicatura")
+
                 #self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)

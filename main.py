@@ -9,6 +9,7 @@ from context import Context
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
 from pid_pwm import PID
+from ml_model.ml_model import MLModel
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
@@ -28,7 +29,9 @@ DEFAULT_CONFIG = {
     "SAMPLE_INTERVAL": 0.6,
     "KP": 0.018,
     "KI": 0.0000134,
-    "KD": 0.15
+    "KD": 0.10,
+    "ML_PREPROCESS_PATH": "model/preprocess.pkl",
+    "ML_MODEL_PATH": "model/xgb_model.json"
 }
 config_loaded:bool = False
 
@@ -63,6 +66,8 @@ DB_FILENAME:str = config_data["DB_FILENAME"]
 KP:float = config_data["KP"]
 KI:float = config_data["KI"]
 KD:float = config_data["KD"]
+ML_PREPROCESS_PATH:str = config_data["ML_PREPROCESS_PATH"]
+ML_MODEL_PATH:str = config_data["ML_MODEL_PATH"]
 
 
 tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE, TC_MAX_TEMP)
@@ -74,7 +79,9 @@ ssr_res:SolidStateRelay = SolidStateRelay(RES_SSR_PIN)
 ssr_fan:SolidStateRelay = SolidStateRelay(FAN_SSR_PIN)
 pid:PID = PID(KP, KI, KD) #creiamo l'oggetto con kp-ki-kd standard da config.json, temp target verrà impostata all'interno delle fasi
 
-ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid)
+ml_pred:MLModel = MLModel(ML_PREPROCESS_PATH, ML_MODEL_PATH)
+
+ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid, ml_pred)
 
 e_proc:Essicatura = Essicatura(ctx)
 r_proc:Ricottura = Ricottura(ctx)

@@ -1,3 +1,4 @@
+from ml_model.ml_model import MLModel
 from thermocouple import Termocoppia
 from sqlite_db import SQLiteDB
 from ss_relay import SolidStateRelay
@@ -5,6 +6,7 @@ from temp_sensor import TempSensor
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
 from pid_pwm import PID
+from ml_model.ml_model import MLModel
 
 
 class Context:
@@ -18,7 +20,8 @@ class Context:
         dht22:TempSensor,
         pzem:PZEM004TModbus,
         sgp:SGP30,
-        pid:PID
+        pid:PID,
+        ml_pred:MLModel
     ) -> None:
         self.tc = thermocouple
         self.sampling_interval = sanpling_interval
@@ -29,3 +32,4 @@ class Context:
         self.pzem = pzem
         self.sgp = sgp
         self.pid = pid
+        self.ml_pred = ml_pred

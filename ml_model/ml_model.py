@@ -1,0 +1,55 @@
+import joblib
+import xgboost as xgb
+import numpy as np
+
+
+class MLModel:
+    def __init__(self, preprocess_path, model_path) -> None:
+        data = joblib.load(preprocess_path)
+        self.scaler = data["scaler"]
+        self.feature_cols = data["feature_cols"]
+
+        self.model = xgb.XGBRegressor()
+        self.model.load_model(model_path)
+
+
+    def _vettore_feature(self, temp_forno, temp_rate, res_output, temp_target, step):
+        x = np.zeros(len(self.feature_cols), dtype=float)
+        x[0] = temp_forno
+        x[1] = temp_rate
+        x[2] = res_output
+        x[3] = temp_target
+
+        if step == "Riscaldamento":
+            x[4] = 1.0
+            x[5] = 0.0
+        else:
+            x[4] = 0.0
+            x[5] = 1.0
+
+        x_scaled = x.copy()
+        x_scaled[:4] = self.scaler.tranform([x[:4]])[0]
+
+        return x_scaled
+
+
+    def _previsione_temp_futura(self, temp_forno, temp_rate, res_output, temp_target, step) -> float:
+        x = self._vettore_feature(temp_forno, temp_rate, res_output, temp_target, step)
+        y_pred = self.model.predict(x.reshape(1, -1))[0]
+        return float(y_pred)
+
+
+    def output_corretto_ml(self, pid_output, temp_forno, temp_rate, temp_target, step) -> float:
+        temp_futura_prevista = self._previsione_temp_futura(temp_forno, temp_rate, pid_output, temp_target, step)
+        tolleranza:float = 0.5
+
+        if temp_futura_prevista > temp_target + tolleranza:
+            output_corretto = pid_output * 0.7
+        elif temp_futura_prevista < temp_target - tolleranza:
+            output_corretto = pid_output * 1.2
+        else:
+            output_corretto = pid_output
+
+        output_corretto = max(0, min(1, output_corretto))
+
+        return output_corretto
