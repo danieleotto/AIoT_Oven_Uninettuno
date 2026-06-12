@@ -15,7 +15,7 @@ class MLModel:
         self.feature_cols = data["feature_cols"]
 
         self.model = xgb.XGBRegressor()
-        try
+        try:
             self.model.load_model(model_path)
         except FileNotFoundError:
             input(f"File modello non trovato: {model_path}")
