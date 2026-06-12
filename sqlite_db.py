@@ -139,7 +139,7 @@ class SQLiteDB:
 
             with open(LOG_FILENAME, "a", encoding="utf-8") as file:
                 if file.tell() == 0:
-                    title = "id, idProc, step, tempTarget, tempForno, errore, kp, ki, kd, elapsedTime, totalElapsedTime, tempRate, ssrRstate, ssrFstate, sysTemp, resOutput, voltage, current, power, eco2, tvoc\n"
+                    title = "id,idProc,step,tempTarget,tempForno,errore,kp,ki,kd,elapsedTime,totalElapsedTime,tempRate,ssrRstate,ssrFstate,sysTemp,resOutput,voltage,current,power,eco2,tvoc\n"
                     file.write(title)
                 for sample in sample_list:
                     text_line = ",".join(str(value) for value in sample)
@@ -155,7 +155,7 @@ class SQLiteDB:
         process_list = self.read_all_processes()
 
         with open(self.PROCESSES_LOG_FILENAME, "a", encoding="utf-8") as file:
-            file.write("idProc, timestamp, processo, duration, state\n")
+            file.write("idProc,timestamp,processo,duration,state\n")
             for process in process_list:
                 text_line = ",".join(str(value) for value in process)
                 file.write(text_line + "\n")
