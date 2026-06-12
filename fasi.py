@@ -104,11 +104,7 @@ class Heating(Fase):
                 
                 res_power_pid = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
                 res_power = self.ctx.ml_pred.output_corretto_ml(res_power_pid, temp, temp_rate, self.target_temp, "Riscaldamento")
-                previsione = self.ctx.ml_pred._previsione_temp_futura(temp_forno=temp,
-                                                                      temp_rate=temp_rate,
-                                                                      res_output=res_power_pid,
-                                                                      temp_target=self.target_temp,
-                                                                      step="Riscaldamento")
+                previsione = self.ctx.ml_pred.get_prev_temp(res_power_pid, temp, temp_rate, self.target_temp, "Riscaldamento")
             
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)

@@ -53,22 +53,25 @@ class MLModel:
 
         match step:
             case "Riscaldamento":
-                if temp_target - 15 < temp_futura_prevista <= temp_target - 5:
-                    output_corretto = pid_output * 0.7
-                elif temp_target - 5 < temp_futura_prevista <= temp_target:
-                    output_corretto = pid_output * 0.5
-                elif temp_futura_prevista > temp_target:
-                    output_corretto = pid_output * 0.3
+                if temp_forno < temp_target:
+                    if temp_target - 10 < temp_futura_prevista <= temp_target -5:
+                        output_corretto = pid_output * 0.7
+                    elif temp_target - 5 < temp_futura_prevista <= temp_target:
+                        output_corretto = pid_output * 0.5
+                    elif temp_futura_prevista > temp_target:
+                        output_corretto = pid_output * 0.3
+                    else:
+                        output_corretto = pid_output
                 else:
                     output_corretto = pid_output
             case "Essicatura":
                 if temp_forno > temp_target:
                     if temp_target - 5 < temp_futura_prevista < temp_target:
-                        output_corretto = pid_output + 0.1
-                    elif temp_target - 10 < temp_futura_prevista <= 5:
                         output_corretto = pid_output + 0.2
+                    elif temp_target - 10 < temp_futura_prevista <= 5:
+                        output_corretto = pid_output + 0.35
                     elif temp_futura_prevista <= temp_target - 10:
-                        output_corretto = pid_output + 0.3
+                        output_corretto = pid_output + 0.6
                     else:
                         output_corretto = pid_output
                 elif temp_forno < temp_target:
@@ -85,5 +88,7 @@ class MLModel:
             case _:
                 output_corretto = pid_output
 
+
         output_corretto = max(0, min(1, output_corretto))
+
         return output_corretto
