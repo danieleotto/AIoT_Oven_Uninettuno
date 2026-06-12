@@ -49,20 +49,45 @@ class MLModel:
 
     def output_corretto_ml(self, pid_output, temp_forno, temp_rate, temp_target, step) -> float:
         temp_futura_prevista = self._previsione_temp_futura(temp_forno, temp_rate, pid_output, temp_target, step)
-        tolleranza:float = 1.0
+        tolleranza = 1.0
 
+        match step:
+            case "Riscaldamento":
+                if temp_forno < temp_target:
+                    if temp_target - 10 < temp_futura_prevista <= temp_target -5:
+                        output_corretto = pid_output * 0.7
+                    elif temp_target - 5 < temp_futura_prevista <= temp_target:
+                        output_corretto = pid_output * 0.5
+                    elif temp_futura_prevista > temp_target:
+                        output_corretto = pid_output * 0.3
+                    else:
+                        output_corretto = pid_output
+                else:
+                    output_corretto = pid_output
+            case "Essicatura":
+                if temp_forno > temp_target:
+                    if temp_target - 5 < temp_futura_prevista < temp_target:
+                        output_corretto = pid_output + 0.2
+                    elif temp_target - 10 < temp_futura_prevista <= 5:
+                        output_corretto = pid_output + 0.35
+                    elif temp_futura_prevista <= temp_target - 10:
+                        output_corretto = pid_output + 0.6
+                    else:
+                        output_corretto = pid_output
+                elif temp_forno < temp_target:
+                    if temp_target - 5 < temp_futura_prevista < temp_target:
+                        output_corretto = pid_output * 1.2
+                    elif temp_target - 10 < temp_futura_prevista <= temp_target - 5:
+                        output_corretto = pid_output * 1.4
+                    elif temp_futura_prevista <= temp_target - 10:
+                        output_corretto = pid_output * 1.6
+                    else:
+                        output_corretto = pid_output
+                else:
+                    output_corretto = pid_output
+            case _:
+                output_corretto = pid_output
 
-        if temp_forno < temp_target and temp_futura_prevista > temp_target + tolleranza:
-            #siamo sotto target e il futuro è in overshoot = freniamo
-            output_corretto = pid_output * 0.7
-        elif temp_forno > temp_target and temp_futura_prevista < temp_target - tolleranza:
-            #siamo oltre target e futuro sotto target = acceleriamo
-            output_corretto = pid_output * 1.3
-        else:
-            #siamo sotto target e futuro ancora sottotarget oppure
-            #siamo sopra target e futuro ancora sopra target
-            # = lasciamo fare al pid
-            output_corretto = pid_output
 
         output_corretto = max(0, min(1, output_corretto))
 
