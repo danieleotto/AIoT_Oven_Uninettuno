@@ -30,8 +30,8 @@ DEFAULT_CONFIG = {
     "KP": 0.018,
     "KI": 0.0000134,
     "KD": 0.10,
-    "ML_PREPROCESS_PATH": "model/dataset_preprocessed.pkl",
-    "ML_MODEL_PATH": "model/model_xgb.json"
+    "ML_PREPROCESS_PATH": "ml_model/model/dataset_preprocessed.pkl",
+    "ML_MODEL_PATH": "ml_model/model/model_xgb.json"
 }
 config_loaded:bool = False
 

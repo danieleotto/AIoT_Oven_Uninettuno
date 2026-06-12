@@ -1,16 +1,24 @@
-import joblib
+import joblib, os
 import xgboost as xgb
 import numpy as np
 
 
 class MLModel:
     def __init__(self, preprocess_path, model_path) -> None:
-        data = joblib.load(preprocess_path)
+        self.MODEL_DIR = "model"
+        os.makedirs(self.MODEL_DIR, exist_ok=True)
+        try:
+            data = joblib.load(preprocess_path)
+        except FileNotFoundError:
+            input(f"Preprocess file non trovato: {preprocess_path}")
         self.scaler = data["scaler"]
         self.feature_cols = data["feature_cols"]
 
         self.model = xgb.XGBRegressor()
-        self.model.load_model(model_path)
+        try
+            self.model.load_model(model_path)
+        except FileNotFoundError:
+            input(f"File modello non trovato: {model_path}")
 
 
     def _vettore_feature(self, temp_forno, temp_rate, res_output, temp_target, step):
