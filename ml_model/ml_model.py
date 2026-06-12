@@ -36,7 +36,7 @@ class MLModel:
             x[5] = 1.0
 
         x_scaled = x.copy()
-        x_scaled[:4] = self.scaler.tranform([x[:4]])[0]
+        x_scaled[:4] = self.scaler.transform([x[:4]])[0]
 
         return x_scaled
 
