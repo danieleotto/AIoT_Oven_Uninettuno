@@ -49,13 +49,19 @@ class MLModel:
 
     def output_corretto_ml(self, pid_output, temp_forno, temp_rate, temp_target, step) -> float:
         temp_futura_prevista = self._previsione_temp_futura(temp_forno, temp_rate, pid_output, temp_target, step)
-        tolleranza:float = 0.5
+        tolleranza:float = 1.0
 
-        if temp_futura_prevista > temp_target + tolleranza:
+
+        if temp_forno < temp_target and temp_futura_prevista > temp_target + tolleranza:
+            #siamo sotto target e il futuro è in overshoot = freniamo
             output_corretto = pid_output * 0.7
-        elif temp_futura_prevista < temp_target - tolleranza:
-            output_corretto = pid_output * 1.2
+        elif temp_forno > temp_target and temp_futura_prevista < temp_target - tolleranza:
+            #siamo oltre target e futuro sotto target = acceleriamo
+            output_corretto = pid_output * 1.3
         else:
+            #siamo sotto target e futuro ancora sottotarget oppure
+            #siamo sopra target e futuro ancora sopra target
+            # = lasciamo fare al pid
             output_corretto = pid_output
 
         output_corretto = max(0, min(1, output_corretto))
