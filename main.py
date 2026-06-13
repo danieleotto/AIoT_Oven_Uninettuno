@@ -1,3 +1,8 @@
+import sys
+sys.path.append("/home/orangepi/.local/lib/python3.12/site-packages")
+import xgboost
+print("XGBoost OK:", xgboost.__version__)
+
 import json
 from thermocouple import Termocoppia
 from sqlite_db import SQLiteDB

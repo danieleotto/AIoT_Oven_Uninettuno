@@ -51,7 +51,7 @@ class Fase:
                      sys_temp:float,
                      power_values:tuple[float, float, float],
                      ml_values:tuple) -> None:
-        for i in range (0,10):
+        for i in range (0,8): #portare a 10 se si decommentano le ultime due righe
             sys.stdout.write("\033[F\033[K")
 
         print(f"{self.name} in corso...")
