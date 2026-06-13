@@ -67,8 +67,8 @@ class Fase:
         print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
         print(f"Voltage: {power_values[0]:.1f} V | Current: {power_values[1]:.3f} A | Power: {power_values[2]:.1f} W")
         print(f"ML MODEL:: Temperatura prevista: {ml_values[1]:.2f}")
-        print(f"ML MODEL:: x: {ml_values[2]}")
-        print(f"ML MODEL:: x_scaled: {ml_values[3]}")
+        # print(f"ML MODEL:: x: {ml_values[2]}")
+        # print(f"ML MODEL:: x_scaled: {ml_values[3]}")
         
 
 
