@@ -8,3 +8,4 @@
 /.VSCodeCounter/
 /customlib/pymodbus/
 /config.json
+/ml_model/model/

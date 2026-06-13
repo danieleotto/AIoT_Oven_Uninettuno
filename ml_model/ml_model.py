@@ -35,24 +35,20 @@ class MLModel:
             x[4] = 0.0
             x[5] = 1.0
 
-        x_scaled = x.copy()
-        x_scaled[:4] = self.scaler.transform([x[:4]])[0]
+        # x_scaled = x.copy()
+        # x_scaled[:4] = self.scaler.transform([x[:4]])[0]
 
-        print("prima", x[:4])
-        print("dopo", x_scaled[:4])
+        # print("prima", x[:4])
+        # print("dopo", x_scaled[:4])
 
-        return x_scaled
-
-
-    def _previsione_temp_futura(self, temp_forno, temp_rate, res_output, temp_target, step) -> float:
-        x = self._vettore_feature(temp_forno, temp_rate, res_output, temp_target, step)
-        y_pred = self.model.predict(x.reshape(1, -1))[0]
-        return float(y_pred)
+        return x
 
 
     def output_corretto_ml(self, pid_output, temp_forno, temp_rate, temp_target, step) -> float:
-        temp_futura_prevista = self._previsione_temp_futura(temp_forno, temp_rate, pid_output, temp_target, step)
-        tolleranza = 1.0
+        x = self._vettore_feature(temp_forno, temp_rate, pid_output, temp_target, step)
+        x_scaled = x.copy()
+        x_scaled[:4] = self.scaler.transform([x[:4]])[0]
+        temp_futura_prevista = self.model.predict(x_scaled.reshape(1, -1))[0]
 
         match step:
             case "Riscaldamento":
@@ -91,7 +87,9 @@ class MLModel:
             case _:
                 output_corretto = pid_output
 
-
         output_corretto = max(0, min(1, output_corretto))
+        print("ML --- x:", x)
+        print("ML --- x_scaled:", x_scaled)
+        print("ML --- temp prevista +12s:", temp_futura_prevista)
 
         return output_corretto

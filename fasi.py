@@ -51,7 +51,7 @@ class Fase:
                      ssr_fan_state:str,
                      sys_temp:float,
                      power_values:tuple[float, float, float] = (0,0,0)) -> None:
-        for i in range (0,7):
+        for i in range (0,10):
             sys.stdout.write("\033[F\033[K")
 
         print(f"{self.name} in corso...")
