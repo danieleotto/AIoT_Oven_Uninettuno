@@ -44,7 +44,7 @@ class MLModel:
         return x
 
 
-    def output_corretto_ml(self, pid_output, temp_forno, temp_rate, temp_target, step) -> float:
+    def output_corretto_ml(self, pid_output, temp_forno, temp_rate, temp_target, step):
         x = self._vettore_feature(temp_forno, temp_rate, pid_output, temp_target, step)
         x_scaled = x.copy()
         x_scaled[:4] = self.scaler.transform([x[:4]])[0]
@@ -92,4 +92,4 @@ class MLModel:
         print("ML --- x_scaled:", x_scaled[:4])
         print("ML --- temp prevista +12s:", temp_futura_prevista)
 
-        return output_corretto
+        return output_corretto, temp_futura_prevista, x, x_scaled

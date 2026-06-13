@@ -74,14 +74,16 @@ scaling_cols = [
     "resOutput",
     "tempTarget",
 ]
-scaler = StandardScaler()
 X_train_scaled = X_train.copy()
 X_val_scaled = X_val.copy()
 X_test_scaled = X_test.copy()
 
-X_train_scaled[:, :len(scaling_cols)] = scaler.fit_transform(X_train[:,:len(scaling_cols)])
-X_val_scaled[:, :len(scaling_cols)] = scaler.fit_transform(X_val[:,:len(scaling_cols)])
-X_test_scaled[:, :len(scaling_cols)] = scaler.fit_transform(X_test[:,:len(scaling_cols)])
+scaler = StandardScaler()
+scaler.fit(X_train[:, :len(scaling_cols)])
+
+X_train_scaled[:, :len(scaling_cols)] = scaler.transform(X_train[:,:len(scaling_cols)])
+X_val_scaled[:, :len(scaling_cols)] = scaler.transform(X_val[:,:len(scaling_cols)])
+X_test_scaled[:, :len(scaling_cols)] = scaler.transform(X_test[:,:len(scaling_cols)])
 
 
 joblib.dump(

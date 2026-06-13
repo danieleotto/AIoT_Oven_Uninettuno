@@ -45,12 +45,12 @@ class Fase:
                      temp:float,
                      progress:float,
                      res_power_pid:float,
-                     res_power:float,
                      fan_power:float,
                      ssr_res_state:str,
                      ssr_fan_state:str,
                      sys_temp:float,
-                     power_values:tuple[float, float, float] = (0,0,0)) -> None:
+                     power_values:tuple[float, float, float],
+                     ml_values:tuple) -> None:
         for i in range (0,10):
             sys.stdout.write("\033[F\033[K")
 
@@ -63,9 +63,12 @@ class Fase:
         text = max(0, math.floor(progress * 100))
         print(f"[{barra}] {text}%")
         print(f"Temperatura sistema: {sys_temp:.1f}")
-        print(f"SSR_Res: state {ssr_res_state} - PID_power {res_power_pid:.2f} - ML_power {res_power:.2f}")
+        print(f"SSR_Res: stato {ssr_res_state} - PID_power {res_power_pid:.2f} - ML_power {ml_values[0]:.2f}")
         print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
         print(f"Voltage: {power_values[0]:.1f} V | Current: {power_values[1]:.3f} A | Power: {power_values[2]:.1f} W")
+        print(f"ML MODEL:: Temperatura prevista: {ml_values[1]:.2f}")
+        print(f"ML MODEL:: x: {ml_values[2]}")
+        print(f"ML MODEL:: x_scaled: {ml_values[3]}")
         
 
 
@@ -102,21 +105,25 @@ class Heating(Fase):
                 temp_rate = delta_temp / delta_time
                 
                 res_power_pid = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
-                res_power = self.ctx.ml_pred.output_corretto_ml(res_power_pid, temp, temp_rate, self.target_temp, "Riscaldamento")
+                res_power, future_temp, x, x_scaled = self.ctx.ml_pred.output_corretto_ml(res_power_pid,
+                                                                                          temp,
+                                                                                          temp_rate,
+                                                                                          self.target_temp,
+                                                                                          "Riscaldamento")
 
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
-                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                    self.print_status(elapsed_time, temp, progress, res_power_pid, 0.0,
+                                      self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
-                                      )
+                                      (res_power, future_temp, x, x_scaled))
                 else:
                     self.ctx.ssr_res.turn_off()
-                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
-                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, 0.0,
+                                      self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
-                                      )
+                                      (res_power, future_temp, x, x_scaled))
                     print(f"Riscaldamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
                     self.step_end_time = time.time()
@@ -176,20 +183,23 @@ class Soaking(Fase):
                 temp_rate = delta_temp / delta_time
                 
                 res_power_pid = self.ctx.pid.calcola_output(temp)
-                res_power = self.ctx.ml_pred.output_corretto_ml(res_power_pid, temp, temp_rate, self.target_temp, "Essicatura")
+                res_power, future_temp, x, x_scaled  = self.ctx.ml_pred.output_corretto_ml(res_power_pid,
+                                                                                           temp, temp_rate,
+                                                                                           self.target_temp,
+                                                                                           "Essicatura")
 
                 #self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
-                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                    self.print_status(elapsed_time, temp, progress, res_power_pid, 0.0,
+                                      self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
-                                      )
+                                      (res_power, future_temp, x, x_scaled))
                 else:
-                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
-                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, 0.0,
+                                      self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
-                                      )
+                                      (res_power, future_temp, x, x_scaled))
                     self.ctx.ssr_res.turn_off()
                     print(f"Essicazione completata in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
@@ -254,15 +264,15 @@ class Cooling(Fase):
                 
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power_pid, 0.0, 0.0, self.ctx.ssr_res.get_state_str(),
-                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                    self.print_status(elapsed_time, temp, progress, res_power_pid, 0.0,
+                                      self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
-                                      )
+                                      (0,0,0,0))
                 else:
-                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, 0.0, 0.0, self.ctx.ssr_res.get_state_str(),
-                                      self.ctx.ssr_fan.get_state_str(), sys_temp,
+                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, 0.0,
+                                      self.ctx.ssr_res.get_state_str(), self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
-                                      )
+                                      (0,0,0,0))
                     self.ctx.ssr_res.turn_off()
                     print(f"Raffreddamento completato in {time_convert_str(elapsed_time)}.\n\n")
                     self.is_done = True
