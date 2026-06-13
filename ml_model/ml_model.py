@@ -38,6 +38,9 @@ class MLModel:
         x_scaled = x.copy()
         x_scaled[:4] = self.scaler.transform([x[:4]])[0]
 
+        print("prima", x[:4])
+        print("dopo", x_scaled[:4])
+
         return x_scaled
 
 
