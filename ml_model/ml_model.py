@@ -53,12 +53,12 @@ class MLModel:
         match step:
             case "Riscaldamento":
                 if temp_forno < temp_target:
-                    if temp_target - 10 < temp_futura_prevista <= temp_target -5:
-                        output_corretto = pid_output * 0.7
-                    elif temp_target - 5 < temp_futura_prevista <= temp_target:
-                        output_corretto = pid_output * 0.5
+                    if temp_target - 15 < temp_futura_prevista <= temp_target -10:
+                        output_corretto = pid_output * 0.6
+                    elif temp_target - 10 < temp_futura_prevista <= temp_target:
+                        output_corretto = pid_output * 0.4
                     elif temp_futura_prevista > temp_target:
-                        output_corretto = pid_output * 0.3
+                        output_corretto = pid_output * 0.15
                     else:
                         output_corretto = pid_output
                 else:
@@ -66,11 +66,11 @@ class MLModel:
             case "Essicatura":
                 if temp_forno > temp_target:
                     if temp_target - 5 < temp_futura_prevista < temp_target:
-                        output_corretto = pid_output * 1.3
+                        output_corretto = pid_output + 0.1
                     elif temp_target - 10 < temp_futura_prevista <= 5:
-                        output_corretto = pid_output * 1.6
+                        output_corretto = pid_output + 0.25
                     elif temp_futura_prevista <= temp_target - 10:
-                        output_corretto = pid_output * 1.8
+                        output_corretto = pid_output + 0.4
                     else:
                         output_corretto = pid_output
                 elif temp_forno < temp_target:
