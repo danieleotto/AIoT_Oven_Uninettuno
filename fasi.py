@@ -64,8 +64,7 @@ class Fase:
         print(f"[{barra}] {text}%")
         print(f"Temperatura sistema: {sys_temp:.1f}")
         print(f"SSR_Res: state {ssr_res_state} - PID_power {res_power_pid:.2f} - ML_power {res_power:.2f}")
-        # print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
-        print(f"Predicted temp: {fan_power:.2f}")
+        print(f"SSR_Fan: state {ssr_fan_state} - power {fan_power:.2f}")
         print(f"Voltage: {power_values[0]:.1f} V | Current: {power_values[1]:.3f} A | Power: {power_values[2]:.1f} W")
         
 
@@ -104,22 +103,17 @@ class Heating(Fase):
                 
                 res_power_pid = self.ctx.pid.calcola_output_limitato_up(temp, temp_rate, self.target_temp_rate)
                 res_power = self.ctx.ml_pred.output_corretto_ml(res_power_pid, temp, temp_rate, self.target_temp, "Riscaldamento")
-                previsione = self.ctx.ml_pred._previsione_temp_futura(temp_forno=temp,
-                                                                      temp_rate=temp_rate,
-                                                                      res_output=res_power_pid,
-                                                                      temp_target=self.target_temp,
-                                                                      step="Riscaldamento")
-            
+
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
                     progress = min((temp - self.start_temp) / (self.target_temp - self.start_temp), 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power_pid, res_power, previsione, self.ctx.ssr_res.get_state_str(),
+                    self.print_status(elapsed_time, temp, progress, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
                     self.ctx.ssr_res.turn_off()
-                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, res_power, previsione, self.ctx.ssr_res.get_state_str(),
+                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
@@ -183,21 +177,16 @@ class Soaking(Fase):
                 
                 res_power_pid = self.ctx.pid.calcola_output(temp)
                 res_power = self.ctx.ml_pred.output_corretto_ml(res_power_pid, temp, temp_rate, self.target_temp, "Essicatura")
-                previsione = self.ctx.ml_pred._previsione_temp_futura(temp_forno=temp,
-                                                                      temp_rate=temp_rate,
-                                                                      temp_target=self.target_temp,
-                                                                      res_output=res_power_pid,
-                                                                      step="Essicatura")
 
                 #self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
                     progress = min(elapsed_time / self.target_time, 1.0)
-                    self.print_status(elapsed_time, temp, progress, res_power_pid, res_power, previsione, self.ctx.ssr_res.get_state_str(),
+                    self.print_status(elapsed_time, temp, progress, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
                 else:
-                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, res_power, previsione, self.ctx.ssr_res.get_state_str(),
+                    self.print_status(elapsed_time, temp, 1.0, res_power_pid, res_power, 0.0, self.ctx.ssr_res.get_state_str(),
                                       self.ctx.ssr_fan.get_state_str(), sys_temp,
                                       (self.ctx.pzem.get_voltage(), self.ctx.pzem.get_current(), self.ctx.pzem.get_power()),
                                       )
