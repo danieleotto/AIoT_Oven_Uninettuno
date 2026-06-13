@@ -88,8 +88,8 @@ class MLModel:
                 output_corretto = pid_output
 
         output_corretto = max(0, min(1, output_corretto))
-        print("ML --- x:", x)
-        print("ML --- x_scaled:", x_scaled)
+        print("ML --- x:", x[:4])
+        print("ML --- x_scaled:", x_scaled[:4])
         print("ML --- temp prevista +12s:", temp_futura_prevista)
 
         return output_corretto
