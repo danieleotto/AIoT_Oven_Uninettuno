@@ -66,11 +66,11 @@ class MLModel:
             case "Essicatura":
                 if temp_forno > temp_target:
                     if temp_target - 5 < temp_futura_prevista < temp_target:
-                        output_corretto = pid_output + 0.2
+                        output_corretto = pid_output * 1.3
                     elif temp_target - 10 < temp_futura_prevista <= 5:
-                        output_corretto = pid_output + 0.35
+                        output_corretto = pid_output * 1.6
                     elif temp_futura_prevista <= temp_target - 10:
-                        output_corretto = pid_output + 0.6
+                        output_corretto = pid_output * 1.8
                     else:
                         output_corretto = pid_output
                 elif temp_forno < temp_target:
