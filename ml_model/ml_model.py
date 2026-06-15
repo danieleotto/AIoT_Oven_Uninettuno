@@ -59,7 +59,7 @@ class MLRegressorModel:
                         output_corretto = pid_output * 0.35
                     elif temp_target - 20 < temp_futura_prevista <= temp_target - 15:
                         output_corretto = pid_output * 0.15
-                    elif temp_futura_prevista <= temp_target - 15:
+                    elif temp_target - 15 < temp_futura_prevista < temp_target:
                         output_corretto = 0.0
                     else:
                         output_corretto = pid_output
