@@ -109,7 +109,7 @@ class MLIsolationModel:
 
 
     def controlla_anomalia(self, power, current, voltage, res_output) -> None:
-        x = np.array([power, current, voltage, res_output])
+        x = np.array([[power, current, voltage, res_output]])
         x_scaled = self.scaler.transform(x)
         label = self.model.predict(x_scaled)[0]
 
