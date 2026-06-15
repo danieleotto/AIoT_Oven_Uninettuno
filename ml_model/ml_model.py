@@ -66,26 +66,27 @@ class MLRegressorModel:
                 else:
                     output_corretto = pid_output
             case "Essicatura":
-                if temp_forno > temp_target:
-                    if temp_target - 5 < temp_futura_prevista < temp_target:
-                        output_corretto = pid_output + 0.05
-                    elif temp_target - 10 < temp_futura_prevista <= 5:
-                        output_corretto = pid_output + 0.15
-                    elif temp_futura_prevista <= temp_target - 10:
-                        output_corretto = pid_output + 0.25
-                    else:
-                        output_corretto = pid_output
-                elif temp_forno < temp_target:
-                    if temp_target - 5 < temp_futura_prevista < temp_target:
-                        output_corretto = pid_output * 1.1
-                    elif temp_target - 10 < temp_futura_prevista <= temp_target - 5:
-                        output_corretto = pid_output * 1.2
-                    elif temp_futura_prevista <= temp_target - 10:
-                        output_corretto = pid_output * 1.3
-                    else:
-                        output_corretto = pid_output
-                else:
-                    output_corretto = pid_output
+                # if temp_forno > temp_target:
+                #     if temp_target - 5 < temp_futura_prevista < temp_target:
+                #         output_corretto = pid_output + 0.05
+                #     elif temp_target - 10 < temp_futura_prevista <= 5:
+                #         output_corretto = pid_output + 0.15
+                #     elif temp_futura_prevista <= temp_target - 10:
+                #         output_corretto = pid_output + 0.25
+                #     else:
+                #         output_corretto = pid_output
+                # elif temp_forno < temp_target:
+                #     if temp_target - 5 < temp_futura_prevista < temp_target:
+                #         output_corretto = pid_output * 1.1
+                #     elif temp_target - 10 < temp_futura_prevista <= temp_target - 5:
+                #         output_corretto = pid_output * 1.2
+                #     elif temp_futura_prevista <= temp_target - 10:
+                #         output_corretto = pid_output * 1.3
+                #     else:
+                #         output_corretto = pid_output
+                # else:
+                #     output_corretto = pid_output
+                output_corretto = pid_output
             case _:
                 output_corretto = pid_output
 
