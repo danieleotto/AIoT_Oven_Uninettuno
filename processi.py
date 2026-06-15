@@ -131,6 +131,10 @@ class Essicatura(Processo):
             self.ctx.ssr_res.turn_off()        
             process_time = time.time() - start_time
             self.ctx.sq.process_complete(process_time, "OK")
+            if self.ctx.ml_anomalie.processo_ok():
+                print(f"{ANSI.BOLD}{ANSI.GREEN}Processo OK: anomalie sotto il {self.ctx.ml_anomalie.limite_anomalie * 100}%.{ANSI.RESET}")
+            else:
+                print(f"{ANSI.BOLD}{ANSI.RED}Processo NON OK: anomalie sopra il {self.ctx.ml_anomalie.limite_anomalie * 100}% (Rilevato {self.ctx.ml_anomalie.percentuale_anomalie * 100}%.{ANSI.RESET}")
             input(f"{ANSI.BOLD}{ANSI.GREEN}Processo completato in {time_convert_str(process_time)}.\nPremere un tasto per continuare...{ANSI.RESET}\n")    
             return "MAIN_MENU"
                 
@@ -171,6 +175,7 @@ class Essicatura(Processo):
             self.ctx.ssr_fan.turn_off()
             self.ctx.sq.log_samples()
             self.clear_values()
+            self.ctx.ml_anomalie.reset_anomalie()
 
 
 

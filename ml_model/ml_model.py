@@ -1,9 +1,9 @@
-import joblib, os
+import joblib, os, pickle
 import xgboost as xgb
 import numpy as np
 
 
-class MLModel:
+class MLRegressorModel:
     def __init__(self, preprocess_path, model_path) -> None:
         self.MODEL_DIR = "model"
         os.makedirs(self.MODEL_DIR, exist_ok=True)
@@ -92,3 +92,40 @@ class MLModel:
         output_corretto = max(0, min(1, output_corretto))
 
         return output_corretto, temp_futura_prevista, x, x_scaled
+
+
+
+class MLIsolationModel:
+    def __init__(self, model_path, scaler_path, limite_anomalie:float):
+        with open(model_path, 'rb') as f:
+            self.model=pickle.load(f)
+        with open(scaler_path, 'rb') as f:
+            self.scaler = pickle.load(f)
+
+        self.campioni_totali = 0
+        self.campioni_anomalie = 0
+        self.limite_anomalie = limite_anomalie
+        self.percentuale_anomalie = 0
+
+
+    def controlla_anomalia(self, power, current, voltage, res_output) -> None:
+        x = np.array([power, current, voltage, res_output])
+        x_scaled = self.scaler.transform(x)
+        label = self.model.predict(x_scaled)[0]
+
+        self.campioni_totali += 1
+        if label == -1:
+            self.campioni_anomalie += 1
+
+
+    def processo_ok(self) -> bool:
+        if self.campioni_totali == 0:
+            return True
+
+        self.percentuale_anomalie = self.campioni_anomalie / self.campioni_totali
+        return self.percentuale_anomalie < self.limite_anomalie
+
+
+    def reset_anomalie(self) -> None:
+        self.campioni_totali = 0
+        self.campioni_anomalie = 0

@@ -14,7 +14,7 @@ from context import Context
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
 from pid_pwm import PID
-from ml_model.ml_model import MLModel
+from ml_model.ml_model import MLRegressorModel, MLIsolationModel
 
 CONFIG_FILE:str = 'config.json'
 DEFAULT_CONFIG = {
@@ -35,8 +35,11 @@ DEFAULT_CONFIG = {
     "KP": 0.018,
     "KI": 0.0000134,
     "KD": 0.10,
-    "ML_PREPROCESS_PATH": "ml_model/model/dataset_preprocessed.pkl",
-    "ML_MODEL_PATH": "ml_model/model/model_xgb.json"
+    "XGB_PREPROCESS_PATH": "ml_model/model/dataset_preprocessed.pkl",
+    "XGB_MODEL_PATH": "ml_model/model/model_xgb.json",
+    "ISO_SCALER_PATH": "ml_model/model/scaler_if.pkl",
+    "ISO_MODEL_PATH": "ml_model/model/isolation_forest.pkl",
+    "ISO_MODEL_LIMIT": 0.1,
 }
 config_loaded:bool = False
 
@@ -71,8 +74,11 @@ DB_FILENAME:str = config_data["DB_FILENAME"]
 KP:float = config_data["KP"]
 KI:float = config_data["KI"]
 KD:float = config_data["KD"]
-ML_PREPROCESS_PATH:str = config_data["ML_PREPROCESS_PATH"]
-ML_MODEL_PATH:str = config_data["ML_MODEL_PATH"]
+XGB_PREPROCESS_PATH:str = config_data["XGB_PREPROCESS_PATH"]
+XGB_MODEL_PATH:str = config_data["XGB_MODEL_PATH"]
+ISO_SCALER_PATH:str = config_data["ISO_SCALER_PATH"]
+ISO_MODEL_PATH:str = config_data["ISO_MODEL_PATH"]
+ISO_MODEL_LIMIT:float = config_data["ISO_MODEL_LIMIT"]
 
 
 tc:Termocoppia = Termocoppia(TC_SCK_PIN, TC_CS_PIN, TC_DO_PIN, SAMPLE_SIZE, TC_MAX_TEMP)
@@ -84,9 +90,10 @@ ssr_res:SolidStateRelay = SolidStateRelay(RES_SSR_PIN)
 ssr_fan:SolidStateRelay = SolidStateRelay(FAN_SSR_PIN)
 pid:PID = PID(KP, KI, KD) #creiamo l'oggetto con kp-ki-kd standard da config.json, temp target verrà impostata all'interno delle fasi
 
-ml_pred:MLModel = MLModel(ML_PREPROCESS_PATH, ML_MODEL_PATH)
+ml_pred:MLRegressorModel = MLRegressorModel(XGB_PREPROCESS_PATH, XGB_MODEL_PATH)
+ml_anomalie:MLIsolationModel = MLIsolationModel(ISO_MODEL_PATH, ISO_SCALER_PATH, ISO_MODEL_LIMIT)
 
-ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid, ml_pred)
+ctx:Context = Context(tc, SAMPLING_INTERVAL, sq, ssr_res, ssr_fan, dht22, pzem, sgp, pid, ml_pred, ml_anomalie)
 
 e_proc:Essicatura = Essicatura(ctx)
 r_proc:Ricottura = Ricottura(ctx)

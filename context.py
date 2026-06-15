@@ -6,7 +6,7 @@ from temp_sensor import TempSensor
 from customlib.pzem004t_modbus_lib import PZEM004TModbus
 from customlib.sgp30 import SGP30
 from pid_pwm import PID
-from ml_model.ml_model import MLModel
+from ml_model.ml_model import MLRegressorModel, MLIsolationModel
 
 
 class Context:
@@ -21,7 +21,8 @@ class Context:
         pzem:PZEM004TModbus,
         sgp:SGP30,
         pid:PID,
-        ml_pred:MLModel
+        ml_pred:MLRegressorModel,
+        ml_anomalie:MLIsolationModel,
     ) -> None:
         self.tc = thermocouple
         self.sampling_interval = sanpling_interval
@@ -33,3 +34,4 @@ class Context:
         self.sgp = sgp
         self.pid = pid
         self.ml_pred = ml_pred
+        self.ml_anomalie = ml_anomalie

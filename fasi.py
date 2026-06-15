@@ -110,6 +110,10 @@ class Heating(Fase):
                                                                                           temp_rate,
                                                                                           self.target_temp,
                                                                                           "Riscaldamento")
+                self.ctx.ml_anomalie.controlla_anomalia(self.ctx.pzem.get_power(),
+                                                        self.ctx.pzem.get_current(),
+                                                        self.ctx.pzem.get_voltage(),
+                                                        res_power)
 
                 if temp < self.target_temp:
                     self.check_timeout(elapsed_time, self.timeout_limit)
@@ -187,6 +191,10 @@ class Soaking(Fase):
                                                                                            temp, temp_rate,
                                                                                            self.target_temp,
                                                                                            "Essicatura")
+                self.ctx.ml_anomalie.controlla_anomalia(self.ctx.pzem.get_power(),
+                                                        self.ctx.pzem.get_current(),
+                                                        self.ctx.pzem.get_voltage(),
+                                                        res_power)
 
                 #self.check_temperature(elapsed_time, temp, self.target_temp)
                 if elapsed_time < self.target_time:
