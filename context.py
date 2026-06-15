@@ -1,4 +1,3 @@
-from ml_model.ml_model import MLModel
 from thermocouple import Termocoppia
 from sqlite_db import SQLiteDB
 from ss_relay import SolidStateRelay
