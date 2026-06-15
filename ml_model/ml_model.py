@@ -53,12 +53,14 @@ class MLModel:
         match step:
             case "Riscaldamento":
                 if temp_forno < temp_target:
-                    if temp_target - 15 < temp_futura_prevista <= temp_target -10:
+                    if temp_target - 25 < temp_futura_prevista <= temp_target - 20:
                         output_corretto = pid_output * 0.6
-                    elif temp_target - 10 < temp_futura_prevista <= temp_target:
+                    elif temp_target - 20 < temp_futura_prevista <= temp_target -15:
                         output_corretto = pid_output * 0.4
+                    elif temp_target - 15 < temp_futura_prevista <= temp_target:
+                        output_corretto = 0.0
                     elif temp_futura_prevista > temp_target:
-                        output_corretto = pid_output * 0.15
+                        output_corretto = 0.0
                     else:
                         output_corretto = pid_output
                 else:
